@@ -1,0 +1,6 @@
+node_modules/
+# per-user sessions, cached Cloud data and sprite cache — never commit
+data/
+*.sav
+*.sa1
+.env

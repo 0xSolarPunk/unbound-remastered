@@ -1,0 +1,15 @@
+{
+  "name": "unbound-remastered",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "sharp": "^0.35.5",
+    "socket.io-client": "^4.8.4"
+  },
+  "description": "A modern, mobile-friendly viewer for your Pokémon Unbound Cloud — boxes, save files, Wonder Trade and lofi radio.",
+  "license": "MIT"
+}
