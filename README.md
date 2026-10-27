@@ -6,6 +6,8 @@ Sign in with your existing [Unbound Cloud](https://unboundcloud.net/) account an
 
 ![PC box](screenshots/box.png)
 
+![Moving Pokémon between a save file and the Cloud](screenshots/transfer.png)
+
 <p align="center">
   <img src="screenshots/mobile-box.png" width="260" alt="Mobile box">
   <img src="screenshots/mobile-summary.png" width="260" alt="Mobile summary">
@@ -21,7 +23,9 @@ Sign in with your existing [Unbound Cloud](https://unboundcloud.net/) account an
 - **Cries & animations** — tap a Pokémon and it hops (shinies burst into sparkles) while its real cry plays; the music ducks underneath. Tap the portrait in the summary to hear it again. Cries can be switched off in the radio menu.
 - **Summary card** — IV bars with EVs shaded underneath, nature ▲▼, moves, ball, held item, OT, met data.
 - **Save files** — upload a `.sav` and browse it with the same UI (parsed by Unbound Cloud's own save reader).
-- **Wonder Trade** — from your Cloud *or* a save file. Cloud trades save straight back; save-file trades give you an updated `.sav` to download.
+- **Move Pokémon anywhere** — between your save and your Cloud, or between boxes. On desktop, Save and Cloud sit side by side and you can drag & drop; on phones, use ✋ Arrange (tap to pick up, tap to drop — drop onto a Pokémon to swap). Release Pokémon you don't want. Everything stays local until you press **Save** (with Undo / Discard).
+- **Safe saving** — the server verifies nothing was duplicated, altered or lost (other than what you released), refuses to overwrite a Cloud that changed elsewhere, and backs up your Cloud and save before writing. Save-file changes give you an updated `.sav` to put back in your game.
+- **Wonder Trade** — from your Cloud *or* a save file. Runs in the background while you browse (cancel anytime and keep your Pokémon), tells you which trainer you traded with, plays a little fanfare and can send a browser notification. A banner tells you when another trainer is already waiting for an instant match. Same eligibility rules as Unbound Cloud (no eggs, untradeable held items, duplicate moves, special characters, or 2-minute post-trade cooldown).
 - **Route Radio** 📻 — an original, procedurally generated lofi soundtrack (Web Audio, no audio files): jazzy chords, a soft Game Boy–style lead, boom-bap drums, vinyl crackle, rain and waves. Four stations.
 - **Light & dark mode**, installable-feeling mobile layout with a bottom-sheet summary.
 
@@ -44,6 +48,13 @@ npm start            # → http://localhost:8777
 
 Options (environment variables): `PORT` (default `8777`), `HOST` (default `0.0.0.0`), `TRADE_TIMEOUT_MS` (default `120000`).
 
+### Keep it running with tmux + Tailscale
+
+```bash
+./scripts/tmux.sh          # tailscaled (userspace) + the server in a tmux session 'ubr', auto-restarting
+tmux respawn-window -k -t ubr:web   # restart the server after pulling changes
+```
+
 ### Access it from your phone with Tailscale
 
 ```bash
@@ -61,7 +72,8 @@ Unbound Cloud's web app is a React SPA backed by a small JSON + Socket.IO API. T
 | `POST /getAccountCloudData` | your Cloud boxes, titles and sync key |
 | `POST /uploadSaveFile` | parse a `.sav` |
 | `POST /getUpdatedSaveFile` | re-encode a `.sav` after a trade |
-| `POST /saveAccountCloudData` | write Cloud boxes back after a trade |
+| `POST /saveAccountCloudData` | write Cloud boxes back after moves / releases / trades |
+| `POST /checkWonderTrade` | is a trainer already waiting? |
 | Socket.IO `tradeType` / `message` | Wonder Trade |
 
 `server.js` is a single dependency-light Node server (stdlib HTTP + `socket.io-client` + `sharp`). It proxies those calls so the browser never needs CORS, and keeps a per-browser session.

@@ -102,7 +102,7 @@
   @keyframes eq{50%{height:12px}}
 
   /* ---------- PC box ---------- */
-  main{flex:1;min-height:0;display:flex;padding:10px 12px 12px}
+  main{flex:1;min-height:0;display:flex;gap:12px;padding:10px 12px 12px;position:relative}
   .box{flex:1;min-width:0;display:flex;flex-direction:column;border-radius:26px;box-shadow:var(--shadow);overflow:hidden;position:relative;
     background:var(--wall,linear-gradient(160deg,#9be7da,#7cc4f5));transition:background .35s}
   .box::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;
@@ -111,15 +111,51 @@
   .arrow{width:40px;height:40px;border:none;border-radius:50%;background:#ffffffd9;color:#23314a;font-size:22px;font-weight:900;display:grid;place-items:center;box-shadow:0 2px 8px #0000001a;flex:none;transition:transform .12s}
   .arrow:hover:not(:disabled){transform:scale(1.06)}
   .arrow:active:not(:disabled){transform:scale(.95)}
-  #navmid{flex:1;min-width:0;display:flex;justify-content:center}
+  .navmid{flex:1;min-width:0;display:flex;justify-content:center}
   .boxname{position:relative;max-width:min(420px,100%);width:100%}
   .boxname select{width:100%;appearance:none;-webkit-appearance:none;border:none;border-radius:999px;background:#ffffffe6;color:#23314a;
     font-weight:900;font-size:16px;text-align:center;text-align-last:center;padding:9px 34px;box-shadow:0 2px 8px #0000001a;outline:none;cursor:pointer}
   .boxname::after{content:"";position:absolute;right:16px;top:50%;width:7px;height:7px;border:solid #7b8ba4;border-width:0 2.4px 2.4px 0;transform:translateY(-70%) rotate(45deg);pointer-events:none}
-  #reslabel{background:#ffffffe6;color:#23314a;border-radius:999px;padding:9px 18px;font-size:14px;box-shadow:0 2px 8px #0000001a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #reslabel b{font-weight:900}
+  .reslabel{background:#ffffffe6;color:#23314a;border-radius:999px;padding:9px 18px;font-size:14px;box-shadow:0 2px 8px #0000001a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .reslabel b{font-weight:900}
   .gridwrap{flex:1;min-height:0;position:relative;padding:4px 12px 12px}
-  #grid{height:100%;display:grid;gap:9px;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr))}
+  .grid{height:100%;display:grid;gap:9px;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr))}
+  .srcchip{flex:none;font-size:12px;font-weight:900;color:#23314a;background:#ffffffb3;border-radius:999px;padding:6px 10px;white-space:nowrap}
+  .box.focus{box-shadow:var(--shadow),0 0 0 3px #ffffffb3}
+  .empty-msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;color:#23314a;font-weight:800}
+  #loading{position:absolute;inset:10px 12px 12px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#23314a;font-weight:800;
+    z-index:6;background:#ffffff66;backdrop-filter:blur(3px);border-radius:26px}
+  #loading .ball{--s:46px;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* arranging */
+  .slot.lifted{opacity:.35;transform:scale(.94);box-shadow:inset 0 0 0 3px var(--acc)}
+  body.holding .slot{cursor:copy}
+  body.holding .slot.empty{box-shadow:inset 0 0 0 2.5px #ffffffcc;background:#ffffff59}
+  body.holding .slot.empty:hover,.slot.dropover{box-shadow:inset 0 0 0 3px var(--acc)!important;background:#ffffffa6!important}
+  body.arranging .slot:not(.empty){cursor:grab}
+  .slot.moved::before{content:"";position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 2px #fff}
+  .slot.trading{animation:tradePulse 1.4s ease-in-out infinite}
+  .slot.trading::before{content:"🎲";position:absolute;bottom:4px;right:6px;font-size:13px}
+  @keyframes tradePulse{50%{box-shadow:0 0 0 3px var(--gold),0 0 18px #f5b41680}}
+
+  /* bottom floating bars */
+  #floats{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:18;display:flex;flex-direction:column;align-items:center;gap:8px;width:max-content;max-width:calc(100vw - 16px)}
+  .fbar{display:flex;align-items:center;gap:8px;background:var(--card);color:var(--ink);border-radius:999px;box-shadow:0 10px 30px #23314a33;padding:6px 6px 6px 14px;font-size:13px;font-weight:800;animation:barIn .25s cubic-bezier(.3,1.4,.5,1);max-width:100%}
+  .fbar img{width:34px;height:34px;object-fit:contain;margin-left:-6px}
+  .fbar .txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .fbar .txt small{color:var(--dim);font-weight:700}
+  .fbar button{border:none;border-radius:999px;padding:8px 13px;font-weight:900;font-size:12.5px;background:var(--card2);white-space:nowrap}
+  .fbar button.primary{background:linear-gradient(135deg,#14b8a6,#0ea5e9);color:#fff}
+  .fbar button.danger{background:#fee2e2;color:#b91c1c}
+  .fbar button.gold{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#3a2800}
+  .fbar .dot{width:9px;height:9px;border-radius:50%;background:var(--blue);flex:none}
+  .fbar.trade{background:linear-gradient(135deg,#fff7d6,#ffe9b3);color:#3a2800}
+  [data-theme=dark] .fbar.trade{background:linear-gradient(135deg,#3a2f12,#4a3812);color:#ffe9b3}
+  .spin{display:inline-block;animation:spin 1.2s linear infinite}
+  @keyframes barIn{from{opacity:0;transform:translateY(20px) scale(.95)}}
+  #banner{position:absolute;top:18px;left:50%;transform:translateX(-50%);z-index:7}
+  #banner .fbar{background:linear-gradient(135deg,#fff7d6,#ffe9b3);color:#3a2800;padding:5px 5px 5px 14px}
   .slot{position:relative;min-width:0;min-height:0;border-radius:18px;background:var(--slot);box-shadow:0 1px 3px #0000000f;display:flex;flex-direction:column;align-items:center;justify-content:center;
     padding:4px 4px 6px;cursor:pointer;transition:transform .14s,box-shadow .14s;animation:slotIn .28s ease-out backwards}
   .slot:hover{transform:translateY(-3px);box-shadow:0 8px 20px #0000001f}
@@ -152,10 +188,7 @@
   .slot.shiny{box-shadow:0 0 0 2.5px var(--gold),0 4px 14px #f5b41640}
   .slot .sp{position:absolute;top:4px;right:6px;color:var(--gold);font-size:13px;animation:twinkle 2.2s ease-in-out infinite}
   @keyframes twinkle{0%,100%{transform:scale(1) rotate(0);opacity:1}50%{transform:scale(.7) rotate(25deg);opacity:.6}}
-  #empty,#loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;color:#23314a;font-weight:800}
-  #loading{z-index:3;background:#ffffff55;backdrop-filter:blur(3px);border-radius:18px}
-  #loading .ball{--s:46px;animation:spin .9s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
+  body.has-floats main{padding-bottom:78px}
 
   /* ---------- summary panel ---------- */
   #backdrop{position:fixed;inset:0;background:#0f152266;opacity:0;pointer-events:none;transition:opacity .2s;z-index:19}
@@ -176,6 +209,10 @@
   .tag{font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:999px;background:#ffffffd9;color:#23314a}
   .tag.gold{background:var(--gold);color:#3a2800}
   .dbody{padding:4px 20px 22px}
+  .acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+  .acts button{border:none;border-radius:16px;background:var(--card2);padding:10px 6px;font-weight:900;font-size:12.5px;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .acts button span{font-size:19px}
+  .acts button.danger{color:#dc2626}
   .sec{margin:18px 0 8px;font-size:11px;font-weight:900;letter-spacing:.9px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between}
   .statrow{display:grid;grid-template-columns:52px 1fr 30px;align-items:center;gap:10px;margin:7px 0;font-size:12.5px}
   .statrow .k{font-weight:900}
@@ -194,11 +231,11 @@
   .wtbox{margin-top:18px;background:var(--card2);border-radius:20px;padding:14px}
   .wtbox p{margin:0 0 10px;font-size:12.5px;color:var(--dim)}
   .wtbox p b{color:var(--bad)}
+  .wtbox .why{color:var(--bad);font-weight:800;font-size:12.5px;margin-top:8px;text-align:center}
+  .wtbox .hot{color:#b45309;font-weight:900;font-size:12.5px;margin:-4px 0 8px}
   .btn-trade{width:100%;padding:12px;border:none;border-radius:999px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#3a2800;font-weight:900;font-size:14.5px;box-shadow:0 6px 16px #f59e0b44}
-  #wtStatus{font-size:12.5px;margin-top:10px;text-align:center;font-weight:800}
-  #wtStatus a{color:var(--acc)}
 
-  #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,30px);opacity:0;pointer-events:none;
+  #toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top));transform:translate(-50%,-30px);opacity:0;pointer-events:none;
     background:#23314a;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:800;z-index:60;transition:.22s;max-width:90vw;box-shadow:var(--shadow)}
   #toast.show{opacity:1;transform:translate(-50%,0)}
 
@@ -216,12 +253,14 @@
     .search{flex-basis:100%;order:-1}
     .row.tools select{flex:1;min-width:0}
     main{padding:8px}
+    #loading{inset:8px}
     .box{border-radius:22px}
-    .boxbar{padding:8px 8px 4px}
+    .boxbar{padding:8px 8px 4px;gap:6px}
+    .srcchip{display:none}
     .arrow{width:36px;height:36px;font-size:20px}
     .boxname select{font-size:14.5px;padding:8px 30px}
     .gridwrap{padding:4px 8px 8px}
-    #grid{gap:6px;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))}
+    .grid{gap:6px;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))}
     .slot{border-radius:14px;padding:2px 2px 4px}
     .slot .nm{font-size:9.5px}
     .slot .lv{display:none}
@@ -230,13 +269,17 @@
     .grab{display:block;position:absolute;top:8px;left:50%;transform:translateX(-50%);width:42px;height:5px;border-radius:3px;background:#ffffffcc;z-index:2}
     .hero .halo{width:140px;height:140px}.hero img{width:124px;height:124px}
     .menu{right:0;left:0;margin:0 8px}
+    .fbar{font-size:12px;padding-left:12px}
+    .fbar button{padding:8px 10px}
+    .wide-only{display:none!important}
   }
+  @media (min-width:681px) and (max-width:1099px){ .wide-only{display:none!important} }
   @media (max-height:540px) and (orientation:landscape){
     header{flex-direction:row;flex-wrap:wrap;margin:6px 8px 0;padding:6px 8px}
     .hide-sm{display:none!important}
     main{padding:6px 8px 8px}
     .boxbar{padding:6px 8px 2px}
-    #grid{gap:5px;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
+    .grid{gap:5px;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
     .slot .nm,.slot .lv{display:none}
   }
 </style>
@@ -263,8 +306,9 @@
   <div class="row">
     <div class="brand"><div class="ball"></div><div class="word">Unbound <span>Remastered</span></div></div>
     <div class="seg">
-      <button id="srcCloud" class="on">☁️ Cloud</button>
-      <button id="srcSave">💾 Save<span class="hide-sm"> file</span></button>
+      <button id="vCloud" class="on">☁️ Cloud</button>
+      <button id="vSave">💾 Save<span class="hide-sm"> file</span></button>
+      <button id="vBoth" class="wide-only hidden">⇄ Both</button>
     </div>
     <input type="file" id="savefile" accept=".sav,.srm,.sa1,application/octet-stream" hidden>
     <div class="spacer"></div>
@@ -283,8 +327,9 @@
       <option value="ivtotal">Best IVs</option>
       <option value="level">Highest level</option>
     </select>
-    <button class="pill chip gold" id="fShiny">✨ Shiny</button>
-    <button class="pill chip" id="fPerfect">💯 6IV</button>
+    <button class="pill chip gold" id="fShiny">✨<span class="hide-sm"> Shiny</span></button>
+    <button class="pill chip" id="fPerfect">💯<span class="hide-sm"> 6IV</span></button>
+    <button class="pill chip" id="arrangeBtn" title="Arrange: tap to pick up, tap to drop">✋ Arrange</button>
   </div>
   <div class="menu hidden" id="musicMenu">
     <h4>Route Radio · original lofi</h4>
@@ -299,23 +344,11 @@
 </header>
 
 <main id="app-main" class="hidden">
-  <section class="box" id="box">
-    <div class="boxbar">
-      <button class="arrow" id="prev" aria-label="Previous">‹</button>
-      <div id="navmid">
-        <div class="boxname" id="boxnameWrap"><select id="boxsel" aria-label="Box"></select></div>
-        <span id="reslabel" class="hidden"></span>
-      </div>
-      <button class="arrow" id="next" aria-label="Next">›</button>
-    </div>
-    <div class="gridwrap">
-      <div id="grid"></div>
-      <div id="empty">No Pokémon match those filters.</div>
-      <div id="loading"><div class="ball"></div><span id="loadingText">Loading…</span></div>
-    </div>
-  </section>
+  <div id="loading"><div class="ball"></div><span id="loadingText">Loading…</span></div>
+  <div id="banner"></div>
 </main>
 
+<div id="floats"></div>
 <div id="backdrop"></div>
 <aside id="drawer" role="dialog" aria-modal="true">
   <span class="grab"></span>
@@ -323,6 +356,7 @@
   <div id="dbody"></div>
 </aside>
 <div id="toast"></div>
+<a id="dl" href="/api/savedownload" download hidden></a>
 
 <script type="module">
 import { LofiRadio } from "./lofi.js";
@@ -339,9 +373,17 @@ const WALLS=[
   "linear-gradient(160deg,#cdb4ff,#8ec5ff)","linear-gradient(160deg,#ffe58f,#ffb38a)","linear-gradient(160deg,#a5f3fc,#c4b5fd)",
   "linear-gradient(160deg,#fbcfe8,#c7d2fe)","linear-gradient(160deg,#bbf7d0,#fde68a)",
 ];
-const PAGE_SIZE=30;
-let DATA=null, FILTER={shiny:false,perfect:false}, CURBOX=0, PAGE=0, SOURCE="cloud", BOXSIZE=30;
+// Wonder Trade rules, mirroring unboundcloud.net
+const WT_BANNED_ITEMS=new Set(["ITEM_BOTTLE_CAP","ITEM_GOLD_BOTTLE_CAP","ITEM_DREAM_MIST","ITEM_ABILITY_CAPSULE","ITEM_ABILITY_PATCH","ITEM_MAX_POWDER","ITEM_WISHING_PIECE","ITEM_MASTER_BALL","ITEM_PARK_BALL"]);
+const WT_BANNED_CHARS=[..."Œßœºª&+=;¿¡%()…$*▶"], WT_COOLDOWN=120000;
+const BOXSIZE=30, LABEL={cloud:"☁️ Cloud",save:"💾 Save"};
 const $=id=>document.getElementById(id);
+
+/* ---------- state ---------- */
+// STORES[k] = { boxes (working copy), base (last saved), titles, cur, page, name?, randomizer? }
+const STORES={cloud:null,save:null}, PANE={};
+let VIEW="cloud", FOCUS="cloud", ARRANGE=false, HOLD=null, RELEASED=0, HISTORY=[], SYNCING=false;
+let FILTER={shiny:false,perfect:false}, TRADE=null, WAITING=false, DOWNLOAD_READY=false;
 
 /* ---------- utils ---------- */
 const pretty=s=>!s?"":s.replace(/^(BALL_TYPE|[A-Z]+)_/,"").toLowerCase().replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
@@ -349,10 +391,12 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const spriteUrl=m=>`/sprite/${m.species}.webp${m.shiny?"?shiny=1":""}`;
 const lvlFromExp=exp=>Math.max(1,Math.min(100,Math.round(Math.cbrt(exp||1))));
 const ivTotal=m=>(m.ivs||[]).reduce((a,b)=>a+b,0);
-const isFilled=m=>m&&m.species&&m.species!=="SPECIES_NONE"&&Object.keys(m).length>0;
+const isFilled=m=>!!(m&&m.species&&m.species!=="SPECIES_NONE");
 const displayName=m=>m.nickname||pretty(m.species);
+const otherOf=k=>k==="cloud"?"save":"cloud";
+const where=(k,gi)=>`${LABEL[k]} · ${STORES[k].titles[Math.floor(gi/BOXSIZE)]||"Box "+(Math.floor(gi/BOXSIZE)+1)}, slot ${gi%BOXSIZE+1}`;
 window.spriteLoaded=img=>img.classList.add("ok");
-function toast(msg,ms=2600){ const t=$("toast"); t.innerHTML=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),ms); }
+function toast(msg,ms=2800){ const t=$("toast"); t.innerHTML=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),ms); }
 function setLoading(msg){ $("loading").style.display=msg?"flex":"none"; if(msg) $("loadingText").textContent=msg; }
 async function api(path,opts){
   const r=await fetch(path,opts);
@@ -360,6 +404,17 @@ async function api(path,opts){
   const j=await r.json().catch(()=>({}));
   if(!r.ok) throw Object.assign(new Error(j.error||"Request failed"),{data:j});
   return j;
+}
+const post=(path,body)=>api(path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+function wonderTradeBlocker(m){
+  if(!isFilled(m)) return "That slot is empty.";
+  if(m.isEgg||m.isBadEgg) return "Eggs can't be Wonder Traded.";
+  if(WT_BANNED_ITEMS.has(m.item)) return `It's holding ${pretty(m.item)}, which can't be traded.`;
+  const mv=(m.moves||[]).filter(x=>x&&x!=="MOVE_NONE"); if(new Set(mv).size!==mv.length) return "It knows the same move twice, so it can't be traded.";
+  if(WT_BANNED_CHARS.some(c=>(m.nickname||"").includes(c)||(m.otName||"").includes(c))) return "Its nickname or OT name has characters that can't be traded.";
+  const wait=m.wonderTradeTimestamp?WT_COOLDOWN-(Date.now()-m.wonderTradeTimestamp):0;
+  if(wait>0) return `It just arrived — it can be traded again in ${Math.ceil(wait/1000)}s.`;
+  return null;
 }
 
 /* ---------- theme ---------- */
@@ -369,56 +424,116 @@ applyTheme(localStorage.theme||(matchMedia("(prefers-color-scheme: dark)").match
 $("themeBtn").onclick=()=>applyTheme(document.documentElement.dataset.theme==="dark"?"light":"dark");
 
 /* ---------- auth ---------- */
-function showLogin(){ ["app-header","app-main"].forEach(id=>$(id).classList.add("hidden")); $("login").classList.remove("hidden"); closeDrawer(); setTimeout(()=>$("lu").focus(),50); }
+function showLogin(){ ["app-header","app-main"].forEach(id=>$(id).classList.add("hidden")); $("login").classList.remove("hidden"); closeDrawer(); $("floats").innerHTML=""; setTimeout(()=>$("lu").focus(),50); }
 function showApp(user){ $("login").classList.add("hidden"); ["app-header","app-main"].forEach(id=>$(id).classList.remove("hidden")); $("userName").textContent=user; }
 $("loginForm").onsubmit=async e=>{
   e.preventDefault(); $("loginErr").textContent=""; $("loginBtn").disabled=true; $("loginBtn").textContent="Signing in…";
   try{
     const j=await fetch("/api/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({username:$("lu").value,password:$("lp").value})})
       .then(async r=>{const j=await r.json(); if(!r.ok) throw new Error(j.error); return j;});
-    $("lp").value=""; showApp(j.username); load(true);
+    $("lp").value=""; showApp(j.username); boot();
   }catch(err){ $("loginErr").textContent=err.message||"Couldn't sign in."; const c=$("loginForm"); c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake"); }
   $("loginBtn").disabled=false; $("loginBtn").textContent="Sign in";
 };
-$("userBtn").onclick=async()=>{ if(!confirm("Sign out of Unbound Remastered?"))return; await fetch("/api/logout",{method:"POST"}); DATA=null; $("grid").innerHTML=""; showLogin(); };
+$("userBtn").onclick=async()=>{
+  if(anyDirty()&&!confirm("You have unsaved changes. Sign out anyway?")) return;
+  if(!anyDirty()&&!confirm("Sign out of Unbound Remastered?")) return;
+  await fetch("/api/logout",{method:"POST"}); STORES.cloud=STORES.save=null; TRADE=null; showLogin();
+};
 
 /* ---------- data ---------- */
-function setData(d,keepPos){
-  DATA=d;
-  const titles=DATA.cloudTitles||[];
-  BOXSIZE=titles.length?Math.round(DATA.cloudBoxes.length/titles.length):30; if(!BOXSIZE||BOXSIZE<1) BOXSIZE=30;
-  if(!keepPos){ CURBOX=0; PAGE=0; }
-  CURBOX=Math.min(CURBOX,Math.max(0,titles.length-1));
-  buildBoxSelect(); render();
+function setStore(k,boxes,titles,extra={}){
+  const old=STORES[k];
+  STORES[k]={boxes:boxes.slice(),base:boxes.slice(),titles,cur:Math.min(old?.cur||0,titles.length-1),page:0,...extra};
 }
-async function load(live,keepPos){
-  SOURCE="cloud"; setSource();
-  setLoading(live?"Syncing with Unbound Cloud…":"Opening your boxes…");
-  try{ const d=await api("/api/data"+(live?"?live=1":"")); setData(d,keepPos); if(live&&keepPos) toast("✓ Synced with Unbound Cloud"); }
+const dirty=k=>!!STORES[k]&&STORES[k].boxes.some((m,i)=>m!==STORES[k].base[i]);
+const anyDirty=()=>dirty("cloud")||dirty("save");
+async function loadCloud(live,quiet){
+  if(!quiet) setLoading(live?"Syncing with Unbound Cloud…":"Opening your boxes…");
+  try{ const d=await api("/api/data"+(live?"?live=1":"")); setStore("cloud",d.cloudBoxes,d.cloudTitles); render(); }
   catch(e){ toast("⚠️ "+esc(e.message)); }
-  setLoading(null);
+  if(!quiet) setLoading(null);
+}
+// Show the cached copy instantly, then quietly re-sync with Unbound. Editing waits for the sync.
+async function boot(){
+  await loadCloud(false);
+  SYNCING=true;
+  try{ const d=await api("/api/data?live=1"); setStore("cloud",d.cloudBoxes,d.cloudTitles); }catch{}
+  SYNCING=false; render(); checkWaiting();
 }
 async function loadSave(file){
+  if(anyDirty()) return toast("Save or discard your changes before opening a save file.");
   setLoading("Reading "+file.name+"…");
   try{
     const j=await api("/api/savefile?name="+encodeURIComponent(file.name),{method:"POST",headers:{"content-type":"application/octet-stream"},body:await file.arrayBuffer()});
-    SOURCE="save"; setSource();
-    setData({cloudBoxes:j.boxes,cloudTitles:j.titles||Array.from({length:Math.ceil(j.boxes.length/30)},(_,i)=>"Box "+(i+1))});
-    toast("✓ Loaded "+esc(file.name));
-  }catch(e){ toast("⚠️ "+esc(e.message),4500); }
-  setLoading(null);
+    setStore("save",j.boxes,j.titles||Array.from({length:Math.ceil(j.boxes.length/BOXSIZE)},(_,i)=>"Box "+(i+1)),{name:file.name,randomizer:j.randomizer});
+    if(j.cloudBoxes) setStore("cloud",j.cloudBoxes,j.cloudTitles);
+    DOWNLOAD_READY=false;
+    VIEW=innerWidth>=1100?"both":"save"; FOCUS="save";
+    toast(`✓ Opened ${esc(file.name)}`+(j.randomizer?" (randomizer save)":""));
+  }catch(e){ toast("⚠️ "+esc(e.message),5000); }
+  setLoading(null); render();
 }
-function setSource(){ $("srcCloud").classList.toggle("on",SOURCE==="cloud"); $("srcSave").classList.toggle("on",SOURCE==="save"); $("refresh").classList.toggle("hidden",SOURCE!=="cloud"); }
 
-/* ---------- boxes / results ---------- */
-const boxMons=i=>DATA.cloudBoxes.slice(i*BOXSIZE,i*BOXSIZE+BOXSIZE);
-function buildBoxSelect(){
-  const sel=$("boxsel"); sel.innerHTML="";
-  (DATA.cloudTitles||[]).forEach((t,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=`${t||"Box "+(i+1)}  ·  ${boxMons(i).filter(isFilled).length}/${BOXSIZE}`; sel.appendChild(o); });
-  sel.value=CURBOX;
+/* ---------- panes ---------- */
+function visiblePanes(){
+  if(!STORES.save) return ["cloud"];
+  if(VIEW==="both"&&innerWidth>=1100) return ["save","cloud"];
+  return [VIEW==="both"?FOCUS:VIEW];
 }
+function buildPanes(keys){
+  const main=$("app-main");
+  if(keys.join()===main.dataset.panes) return;
+  main.dataset.panes=keys.join();
+  main.querySelectorAll(".box").forEach(b=>b.remove());
+  for(const k in PANE) delete PANE[k];
+  for(const k of keys){
+    const el=document.createElement("section"); el.className="box"; el.dataset.src=k;
+    el.innerHTML=`<div class="boxbar">
+        ${keys.length>1?`<span class="srcchip">${LABEL[k]}</span>`:""}
+        <button class="arrow" data-dir="-1" aria-label="Previous">‹</button>
+        <div class="navmid"><div class="boxname"><select aria-label="Box"></select></div><span class="reslabel hidden"></span></div>
+        <button class="arrow" data-dir="1" aria-label="Next">›</button>
+        ${k==="save"?'<button class="iconbtn" data-act="opensave" title="Open another save">📂</button>':""}
+      </div>
+      <div class="gridwrap"><div class="grid"></div><div class="empty-msg">No Pokémon match those filters.</div></div>`;
+    main.appendChild(el); PANE[k]=el; wirePane(k,el);
+  }
+}
+function wirePane(k,el){
+  const grid=el.querySelector(".grid");
+  el.addEventListener("pointerdown",()=>{ if(FOCUS!==k){ FOCUS=k; el.parentNode.querySelectorAll(".box").forEach(b=>b.classList.toggle("focus",b.dataset.src===k&&visiblePanes().length>1)); } });
+  el.querySelectorAll(".arrow").forEach(a=>{
+    a.onclick=()=>step(k,+a.dataset.dir);
+    a.addEventListener("dragenter",()=>{ clearTimeout(a._t); a._t=setTimeout(()=>step(k,+a.dataset.dir),450); });
+    a.addEventListener("dragleave",()=>clearTimeout(a._t));
+    a.addEventListener("dragover",e=>e.preventDefault());
+  });
+  el.querySelector("select").onchange=e=>{ STORES[k].cur=+e.target.value; render(); e.target.blur(); };
+  el.querySelector('[data-act=opensave]')?.addEventListener("click",()=>$("savefile").click());
+  grid.addEventListener("click",e=>{ const c=e.target.closest(".slot[data-gi]"); if(c) onSlotTap(k,+c.dataset.gi,c); });
+  // desktop drag & drop
+  grid.addEventListener("dragstart",e=>{
+    const c=e.target.closest(".slot[data-gi]"); if(!c) return;
+    const gi=+c.dataset.gi; if(!canPick(k,gi)){ e.preventDefault(); return; }
+    HOLD={src:k,idx:gi}; e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",String(gi));
+    const img=c.querySelector("img"); if(img) e.dataTransfer.setDragImage(img,img.width/2,img.height/2);
+    requestAnimationFrame(()=>{ c.classList.add("lifted"); document.body.classList.add("holding"); });
+  });
+  grid.addEventListener("dragover",e=>{ if(!HOLD) return; const c=e.target.closest(".slot[data-gi]"); if(!c) return; e.preventDefault();
+    grid.querySelectorAll(".dropover").forEach(x=>x!==c&&x.classList.remove("dropover")); c.classList.add("dropover"); });
+  grid.addEventListener("dragleave",e=>{ const c=e.target.closest(".slot"); c?.classList.remove("dropover"); });
+  grid.addEventListener("drop",e=>{ e.preventDefault(); const c=e.target.closest(".slot[data-gi]"); if(c&&HOLD) placeHold(k,+c.dataset.gi); });
+  grid.addEventListener("dragend",()=>{ if(HOLD){ HOLD=null; render(); } });
+  // swipe between boxes / pages
+  let tx=0,ty=0;
+  grid.addEventListener("touchstart",e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+  grid.addEventListener("touchend",e=>{ const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) step(k,dx<0?1:-1); },{passive:true});
+}
+
+/* ---------- search / results ---------- */
 const query=()=>$("q").value.trim().toLowerCase();
-// Results mode = searching / filtering / sorting across every box, paged 30 at a time.
 const resultsMode=()=>!!(query()||FILTER.shiny||FILTER.perfect||$("sort").value!=="box");
 function matches(m,q){
   if(!isFilled(m))return false;
@@ -428,56 +543,163 @@ function matches(m,q){
     if(!q.split(/\s+/).every(w=>hay.includes(w)))return false; }
   return true;
 }
-function results(){
+function results(k){
   const q=query(), sort=$("sort").value;
-  const list=DATA.cloudBoxes.map((m,i)=>({m,gi:i})).filter(x=>matches(x.m,q));
+  const list=STORES[k].boxes.map((m,i)=>({m,gi:i})).filter(x=>matches(x.m,q));
   const cmp={ name:(a,b)=>displayName(a.m).localeCompare(displayName(b.m)), species:(a,b)=>a.m.species.localeCompare(b.m.species)||a.gi-b.gi,
     ivtotal:(a,b)=>ivTotal(b.m)-ivTotal(a.m)||a.gi-b.gi, level:(a,b)=>(b.m.experience||0)-(a.m.experience||0)||a.gi-b.gi, box:(a,b)=>a.gi-b.gi }[sort];
   return list.sort(cmp);
 }
-function slotHtml(m,gi,k){
-  const box=DATA.cloudTitles[Math.floor(gi/BOXSIZE)]||"";
-  return `<div class="slot${m.shiny?" shiny":""}" data-gi="${gi}" style="animation-delay:${k*12}ms" title="${esc(displayName(m))} · ${esc(box)}, slot ${gi%BOXSIZE+1}">
+
+/* ---------- rendering ---------- */
+function slotHtml(k,m,gi,n){
+  const S=STORES[k];
+  const cls=["slot"]; if(m.shiny) cls.push("shiny");
+  if(HOLD&&HOLD.src===k&&HOLD.idx===gi) cls.push("lifted");
+  if(m!==S.base[gi]) cls.push("moved");
+  if(TRADE&&TRADE.source===k&&TRADE.index===gi) cls.push("trading");
+  return `<div class="${cls.join(" ")}" data-gi="${gi}" draggable="true" style="animation-delay:${n*12}ms" title="${esc(displayName(m))} · ${esc(where(k,gi))}">
     ${m.shiny?'<span class="sp">✦</span>':''}<span class="lv">Lv${lvlFromExp(m.experience)}</span>
-    <img class="spr" alt="${esc(pretty(m.species))}" src="${spriteUrl(m)}" onload="spriteLoaded(this)" onerror="this.style.opacity=.2">
+    <img class="spr" alt="${esc(pretty(m.species))}" src="${spriteUrl(m)}" draggable="false" onload="spriteLoaded(this)" onerror="this.style.opacity=.2">
     <div class="nm">${esc(displayName(m))}</div></div>`;
 }
-function render(){
-  if(!DATA)return;
-  let html="", count=0;
-  const all=DATA.cloudBoxes.filter(isFilled);
-  $("stat").innerHTML=`<b>${all.length}</b> Pokémon · ✨ <b>${all.filter(m=>m.shiny).length}</b>`;
+function renderPane(k){
+  const S=STORES[k], el=PANE[k]; if(!S||!el) return;
+  const sel=el.querySelector("select"), rl=el.querySelector(".reslabel"), [prev,next]=el.querySelectorAll(".arrow");
+  let html="", n=0;
   if(resultsMode()){
-    const list=results(), pages=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
-    PAGE=Math.min(PAGE,pages-1);
-    list.slice(PAGE*PAGE_SIZE,PAGE*PAGE_SIZE+PAGE_SIZE).forEach(x=>{html+=slotHtml(x.m,x.gi,count++);});
-    $("boxnameWrap").classList.add("hidden"); $("reslabel").classList.remove("hidden");
-    $("reslabel").innerHTML=`<b>${list.length}</b> found · page <b>${PAGE+1}</b> / ${pages}`;
-    $("prev").disabled=PAGE===0; $("next").disabled=PAGE>=pages-1;
-    $("empty").style.display=list.length?"none":"flex";
-    $("box").style.setProperty("--wall","linear-gradient(160deg,#c7d2fe,#a5f3fc)");
+    const list=results(k), pages=Math.max(1,Math.ceil(list.length/BOXSIZE));
+    S.page=Math.min(S.page,pages-1);
+    list.slice(S.page*BOXSIZE,S.page*BOXSIZE+BOXSIZE).forEach(x=>{html+=slotHtml(k,x.m,x.gi,n++);});
+    sel.parentNode.classList.add("hidden"); rl.classList.remove("hidden");
+    rl.innerHTML=`<b>${list.length}</b> found · page <b>${S.page+1}</b> / ${pages}`;
+    prev.disabled=S.page===0; next.disabled=S.page>=pages-1;
+    el.querySelector(".empty-msg").style.display=list.length?"none":"flex";
+    el.style.setProperty("--wall","linear-gradient(160deg,#c7d2fe,#a5f3fc)");
+    for(;n<BOXSIZE;n++) html+='<div class="slot empty"></div>';
   }else{
-    boxMons(CURBOX).forEach((m,i)=>{ html+=isFilled(m)?slotHtml(m,CURBOX*BOXSIZE+i,count):'<div class="slot empty"></div>'; count++; });
-    $("boxnameWrap").classList.remove("hidden"); $("reslabel").classList.add("hidden"); $("boxsel").value=CURBOX;
-    $("prev").disabled=$("next").disabled=false; // boxes wrap around
-    $("empty").style.display="none";
-    $("box").style.setProperty("--wall",WALLS[CURBOX%WALLS.length]);
+    if(sel.options.length!==S.titles.length||sel.dataset.sig!==sig(k)) buildBoxSelect(k);
+    S.boxes.slice(S.cur*BOXSIZE,S.cur*BOXSIZE+BOXSIZE).forEach((m,i)=>{
+      const gi=S.cur*BOXSIZE+i;
+      html+=isFilled(m)?slotHtml(k,m,gi,n):`<div class="slot empty${m!==S.base[gi]?" moved":""}" data-gi="${gi}"></div>`; n++; });
+    sel.parentNode.classList.remove("hidden"); rl.classList.add("hidden"); sel.value=S.cur;
+    prev.disabled=next.disabled=false;
+    el.querySelector(".empty-msg").style.display="none";
+    el.style.setProperty("--wall",WALLS[(S.cur+(k==="save"?3:0))%WALLS.length]);
   }
-  for(;count<PAGE_SIZE;count++) html+='<div class="slot empty"></div>';
-  $("grid").innerHTML=html;
+  el.querySelector(".grid").innerHTML=html;
+  el.classList.toggle("focus",visiblePanes().length>1&&FOCUS===k);
 }
-function step(dir){
-  if(!DATA)return;
-  if(resultsMode()) PAGE=Math.max(0,PAGE+dir);
-  else { const n=DATA.cloudTitles.length; CURBOX=(CURBOX+dir+n)%n; }
-  render();
+const sig=k=>STORES[k].titles.map((t,i)=>t+STORES[k].boxes.slice(i*BOXSIZE,i*BOXSIZE+BOXSIZE).filter(isFilled).length).join("|");
+function buildBoxSelect(k){
+  const S=STORES[k], sel=PANE[k].querySelector("select"); sel.innerHTML="";
+  S.titles.forEach((t,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=`${t||"Box "+(i+1)}  ·  ${S.boxes.slice(i*BOXSIZE,i*BOXSIZE+BOXSIZE).filter(isFilled).length}/${BOXSIZE}`; sel.appendChild(o); });
+  sel.dataset.sig=sig(k); sel.value=S.cur;
+}
+function render(){
+  if(!STORES.cloud) return;
+  if(VIEW!=="cloud"&&!STORES.save) VIEW="cloud";
+  const keys=visiblePanes(); if(!keys.includes(FOCUS)) FOCUS=keys[0];
+  buildPanes(keys); keys.forEach(renderPane);
+  $("vCloud").classList.toggle("on",VIEW==="cloud"); $("vSave").classList.toggle("on",VIEW==="save"); $("vBoth").classList.toggle("on",VIEW==="both");
+  $("vBoth").classList.toggle("hidden",!STORES.save);
+  const c=STORES.cloud.boxes.filter(isFilled), s=STORES.save?.boxes.filter(isFilled);
+  $("stat").innerHTML=`☁️ <b>${c.length}</b>`+(s?` · 💾 <b>${s.length}</b>`:"")+` · ✨ <b>${c.filter(m=>m.shiny).length+(s?s.filter(m=>m.shiny).length:0)}</b>`;
+  document.body.classList.toggle("holding",!!HOLD); document.body.classList.toggle("arranging",ARRANGE);
+  $("arrangeBtn").classList.toggle("on",ARRANGE);
+  renderFloats();
+}
+addEventListener("resize",()=>{ clearTimeout(window._rz); window._rz=setTimeout(render,120); });
+function step(k,dir){
+  const S=STORES[k]; if(!S) return;
+  if(resultsMode()) S.page=Math.max(0,S.page+dir); else { const n=S.titles.length; S.cur=(S.cur+dir+n)%n; }
+  renderPane(k);
 }
 
+/* ---------- arranging: pick up, drop, swap, release ---------- */
+function canPick(k,gi){
+  if(SYNCING){ toast("Syncing with Unbound Cloud — one sec…"); return false; }
+  if(TRADE&&TRADE.source===k&&TRADE.index===gi){ toast("That Pokémon is out on a Wonder Trade."); return false; }
+  return isFilled(STORES[k].boxes[gi]);
+}
+function pickUp(k,gi){ if(!canPick(k,gi)) return; HOLD={src:k,idx:gi}; render(); }
+function emptyLike(k){ const S=STORES[k]; return S.base.find(m=>!isFilled(m))||S.boxes.find(m=>!isFilled(m))||{}; }
+function pushHistory(){ HISTORY.push({cloud:STORES.cloud.boxes.slice(),save:STORES.save?.boxes.slice(),released:RELEASED}); if(HISTORY.length>200) HISTORY.shift(); }
+function placeHold(k,gi){
+  const a=HOLD; HOLD=null;
+  if(!a||(a.src===k&&a.idx===gi)) return render();
+  if(resultsMode()&&!isFilled(STORES[k].boxes[gi])) return render();
+  if(a.src!==k&&STORES.save?.randomizer){ toast("Randomizer saves can't exchange Pokémon with the Cloud."); return render(); }
+  if(TRADE&&TRADE.source===k&&TRADE.index===gi){ toast("That Pokémon is out on a Wonder Trade."); return render(); }
+  pushHistory();
+  const A=STORES[a.src].boxes, B=STORES[k].boxes, mon=A[a.idx], target=B[gi];
+  B[gi]=mon; A[a.idx]=isFilled(target)?target:emptyLike(a.src);   // empty slots keep their own storage's format
+  render();
+  const slot=PANE[k]?.querySelector(`.slot[data-gi="${gi}"]`); if(slot) tapAnim(slot,mon);
+  if(a.src!==k) toast(`${esc(displayName(mon))} → ${esc(where(k,gi))}`);
+}
+function release(k,gi){
+  const m=STORES[k].boxes[gi];
+  if(!confirm(`Release ${displayName(m)} (${pretty(m.species)})?\n\nOnce you press Save, it's gone forever.`)) return false;
+  pushHistory(); STORES[k].boxes[gi]=emptyLike(k); RELEASED++; HOLD=null;
+  render(); toast(`👋 Bye, ${esc(displayName(m))}! Press <b>Save</b> to make it permanent, or Undo.`,4500); return true;
+}
+function sendTo(k,gi){
+  const o=otherOf(k), O=STORES[o]; if(!O) return;
+  if(STORES.save?.randomizer) return toast("Randomizer saves can't exchange Pokémon with the Cloud.");
+  const start=O.cur*BOXSIZE; let at=O.boxes.findIndex((m,i)=>i>=start&&!isFilled(m)); if(at<0) at=O.boxes.findIndex(m=>!isFilled(m));
+  if(at<0) return toast(`Your ${LABEL[o]} is full.`);
+  pushHistory(); const mon=STORES[k].boxes[gi]; O.boxes[at]=mon; STORES[k].boxes[gi]=emptyLike(k);
+  O.cur=Math.floor(at/BOXSIZE); render(); toast(`${esc(displayName(mon))} → ${esc(where(o,at))}`);
+}
+function undo(){ const h=HISTORY.pop(); if(!h) return; STORES.cloud.boxes=h.cloud; if(STORES.save&&h.save) STORES.save.boxes=h.save; RELEASED=h.released; HOLD=null; render(); }
+function discard(){ if(!confirm("Discard all unsaved changes?")) return; for(const k of ["cloud","save"]) if(STORES[k]) STORES[k].boxes=STORES[k].base.slice(); RELEASED=0; HISTORY=[]; HOLD=null; render(); }
+async function commit(){
+  const body={released:RELEASED};
+  if(dirty("cloud")) body.cloudBoxes=STORES.cloud.boxes;
+  if(dirty("save")) body.saveBoxes=STORES.save.boxes;
+  const what=[]; if(RELEASED) what.push(`release ${RELEASED} Pokémon forever`); if(body.saveBoxes) what.push("give you an updated .sav to put back in your game");
+  if(what.length&&!confirm(`Saving will ${what.join(" and ")}. Continue?`)) return;
+  setLoading("Saving…");
+  try{
+    const j=await post("/api/commit",body);
+    for(const k of ["cloud","save"]) if(STORES[k]) STORES[k].base=STORES[k].boxes.slice();
+    RELEASED=0; HISTORY=[];
+    if(j.saveChanged){ DOWNLOAD_READY=true; $("dl").click(); toast("✓ Saved! Your updated save is downloading — replace your old .sav with it.",7000); }
+    else toast("✓ Saved to Unbound Cloud");
+  }catch(e){
+    if(e.data?.conflict){ for(const k of ["cloud","save"]) if(STORES[k]) STORES[k].boxes=STORES[k].base.slice(); RELEASED=0; HISTORY=[]; await loadCloud(false,true); }
+    toast("⚠️ "+esc(e.message),7000);
+  }
+  setLoading(null); render();
+}
+
+/* ---------- floating bars ---------- */
+const fmt=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+function renderFloats(){
+  let h="";
+  if(TRADE) h+=`<div class="fbar trade"><img src="${spriteUrl(TRADE.mon)}" alt=""><span class="txt">Wonder Trading <b>${esc(displayName(TRADE.mon))}</b> <small>· <span class="spin">🎲</span> finding a partner ${fmt(Math.floor((Date.now()-TRADE.started)/1000))}</small></span><button data-act="cancelTrade">Cancel</button></div>`;
+  if(HOLD){ const m=STORES[HOLD.src].boxes[HOLD.idx];
+    h+=`<div class="fbar"><img src="${spriteUrl(m)}" alt=""><span class="txt">Moving <b>${esc(displayName(m))}</b> <small>· tap any slot${STORES.save&&visiblePanes().length<2?" (switch Cloud/Save up top)":""}</small></span><button class="danger" data-act="releaseHeld">Release</button><button data-act="cancelHold">✕</button></div>`; }
+  if(anyDirty()){
+    const changed=["cloud","save"].reduce((a,k)=>a+(STORES[k]?STORES[k].boxes.filter((m,i)=>m!==STORES[k].base[i]).length:0),0);
+    h+=`<div class="fbar"><span class="dot"></span><span class="txt">Unsaved <small>· ${changed} slot${changed===1?"":"s"}${RELEASED?` · ${RELEASED} released`:""}</small></span><button data-act="undo" title="Undo">↶</button><button data-act="discard">Discard</button><button class="primary" data-act="commit">Save</button></div>`;
+  }else if(DOWNLOAD_READY) h+=`<div class="fbar"><span class="txt">💾 Updated save ready <small>· replace your old .sav with it</small></span><button class="primary" data-act="download">Download</button><button data-act="dismissDl">✕</button></div>`;
+  $("floats").innerHTML=h;
+  document.body.classList.toggle("has-floats",!!h);
+}
+$("floats").addEventListener("click",e=>{
+  const act=e.target.closest("[data-act]")?.dataset.act; if(!act) return;
+  ({ cancelTrade:cancelTrade, cancelHold:()=>{HOLD=null;render();}, releaseHeld:()=>{ if(HOLD) release(HOLD.src,HOLD.idx); },
+     undo, discard, commit, download:()=>$("dl").click(), dismissDl:()=>{DOWNLOAD_READY=false;render();} })[act]?.();
+});
+setInterval(()=>{ if(TRADE) renderFloats(); },1000);
+
 /* ---------- summary panel ---------- */
-let DRAWER_GI=-1;
-function openDrawer(gi){
-  const m=DATA.cloudBoxes[gi]; if(!isFilled(m))return;
-  DRAWER_GI=gi;
+let DRAWER=null;
+function openDrawer(k,gi){
+  const S=STORES[k], m=S.boxes[gi]; if(!isFilled(m)) return;
+  DRAWER={k,gi};
   const mod=NATURE_MOD[(m.nature||"").replace("NATURE_","")];
   const ivs=m.ivs||[], evs=m.evs||[];
   let stats="";
@@ -489,10 +711,12 @@ function openDrawer(gi){
       <div class="track" title="EV ${ev}/252"><b style="width:${Math.min(100,ev/252*100)}%"></b><i style="width:${iv/31*100}%;background:${col};opacity:.95"></i></div>
       <span class="v">${iv}</span></div>`;
   }
-  const evTotal=evs.reduce((a,b)=>a+b,0);
-  const box=DATA.cloudTitles[Math.floor(gi/BOXSIZE)]||"";
+  const evTotal=evs.reduce((a,b)=>a+b,0), o=otherOf(k);
+  const trading=TRADE&&TRADE.source===k&&TRADE.index===gi;
+  const blocker=trading?"It's out on a Wonder Trade right now.":TRADE?"You already have a Wonder Trade running.":SYNCING?"Syncing with Unbound Cloud — one sec.":
+    anyDirty()?"Save or discard your unsaved changes first.":wonderTradeBlocker(m);
   $("dbody").innerHTML=`
-    <div class="hero" style="--wall:${m.shiny?"linear-gradient(160deg,#fde68a,#fdba74)":WALLS[Math.floor(gi/BOXSIZE)%WALLS.length]}">
+    <div class="hero" style="--wall:${m.shiny?"linear-gradient(160deg,#fde68a,#fdba74)":WALLS[(Math.floor(gi/BOXSIZE)+(k==="save"?3:0))%WALLS.length]}">
       <div class="halo" id="heroHalo" title="Tap to hear its cry"><img id="heroImg" class="pop" src="${spriteUrl(m)}" alt=""></div>
       <h2>${esc(displayName(m))}${m.shiny?' <span style="color:#b45309">✦</span>':''}</h2>
       <div class="sub">${esc(pretty(m.species))} · Lv. ${lvlFromExp(m.experience)} · ${m.gender==="M"?"♂":m.gender==="F"?"♀":"—"}</div>
@@ -505,13 +729,18 @@ function openDrawer(gi){
       </div>
     </div>
     <div class="dbody">
+      <div class="acts">
+        <button data-act="move" ${trading?"disabled":""}><span>✋</span>Move</button>
+        <button data-act="send" ${!STORES[o]||trading||STORES.save?.randomizer?"disabled":""} title="${STORES[o]?"":"Open a save file to transfer"}"><span>${k==="cloud"?"💾":"☁️"}</span>To ${k==="cloud"?"Save":"Cloud"}</button>
+        <button data-act="release" class="danger" ${trading?"disabled":""}><span>🕊️</span>Release</button>
+      </div>
       <div class="sec"><span>IVs</span><span>${ivTotal(m)} / 186</span></div>
       ${stats}
       <div class="evnote">Blue shading = EVs (${evTotal} / 510)</div>
       <div class="sec"><span>Moves</span></div>
       <div class="moves">${(m.moves||[]).filter(x=>x&&x!=="MOVE_NONE").map(x=>`<div class="move">${esc(pretty(x))}</div>`).join("")||'<div class="move">—</div>'}</div>
       <div class="sec"><span>Details</span></div>
-      <div class="kv"><span>Location</span><span>${esc(box)} · slot ${gi%BOXSIZE+1}</span></div>
+      <div class="kv"><span>Location</span><span>${esc(where(k,gi))}</span></div>
       <div class="kv"><span>Held item</span><span>${esc(pretty(m.item))||"None"}</span></div>
       <div class="kv"><span>Poké Ball</span><span>${esc(pretty(m.pokeBall))}</span></div>
       <div class="kv"><span>Friendship</span><span>${m.friendship} / 255</span></div>
@@ -519,47 +748,66 @@ function openDrawer(gi){
       <div class="kv"><span>Met</span><span>${esc(pretty(m.metGame))} · Lv. ${m.metLevel}</span></div>
       <div class="wtbox">
         <p>🎲 <strong>Wonder Trade</strong> sends this ${esc(pretty(m.species))} to a random trainer for theirs. <b>It's permanent.</b>
-          ${SOURCE==="save"?"You'll get an updated .sav to download.":"The result is saved straight to your Cloud."}</p>
-        <button class="btn-trade" id="wtBtn">Wonder Trade</button>
-        <div id="wtStatus"></div>
+          ${k==="save"?"You'll get an updated .sav to download.":"The new Pokémon lands in the same slot of your Cloud."} You can keep browsing while it searches.</p>
+        ${WAITING&&!blocker?'<div class="hot">⚡ A trainer is waiting right now — instant match!</div>':''}
+        <button class="btn-trade" id="wtBtn" ${blocker?"disabled":""}>Wonder Trade</button>
+        ${blocker?`<div class="why">${esc(blocker)}</div>`:""}
       </div>
     </div>`;
-  $("wtBtn").onclick=startWonderTrade;
+  const acts=$("dbody").querySelector(".acts");
+  acts.onclick=e=>{ const a=e.target.closest("button[data-act]")?.dataset.act; if(!a) return;
+    if(a==="move"){ closeDrawer(); pickUp(k,gi); if(HOLD) toast("Tap any slot to drop it — onto a Pokémon to swap."); }
+    if(a==="send"){ closeDrawer(); sendTo(k,gi); }
+    if(a==="release"&&release(k,gi)) closeDrawer(); };
+  $("wtBtn").onclick=()=>startWonderTrade(k,gi);
   $("heroHalo").onclick=()=>{ playCry(m); const h=$("heroHalo"), img=$("heroImg");
     h.classList.remove("cry"); img.classList.remove("pop"); void h.offsetWidth; h.classList.add("cry"); img.classList.add("pop"); };
   $("drawer").scrollTop=0; $("drawer").classList.add("open"); $("backdrop").classList.add("open");
 }
-function closeDrawer(){ $("drawer").classList.remove("open"); $("backdrop").classList.remove("open"); }
+function closeDrawer(){ $("drawer").classList.remove("open"); $("backdrop").classList.remove("open"); DRAWER=null; }
 
-async function startWonderTrade(){
-  const gi=DRAWER_GI, m=DATA.cloudBoxes[gi]; if(!isFilled(m))return;
-  if(!confirm(`Wonder Trade ${displayName(m)} (${pretty(m.species)})?\n\nYou'll permanently send it to a random trainer.`))return;
-  const btn=$("wtBtn"), st=$("wtStatus");
-  btn.disabled=true; btn.textContent="Looking for a partner…"; st.textContent="";
+/* ---------- Wonder Trade ---------- */
+async function startWonderTrade(k,gi){
+  const m=STORES[k].boxes[gi];
+  if(!confirm(`Wonder Trade ${displayName(m)} (${pretty(m.species)})?\n\nYou'll permanently send it to a random trainer.`)) return;
+  if("Notification" in window&&Notification.permission==="default") Notification.requestPermission();
   try{
-    const j=await api("/api/wondertrade",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({source:SOURCE,boxIndex:Math.floor(gi/30),slotIndex:gi%30})});
-    const got=j.received;
-    if(SOURCE==="cloud") await load(false,true); else { DATA.cloudBoxes[gi]=got; buildBoxSelect(); render(); }
-    openDrawer(gi);
-    $("wtStatus").innerHTML=`🎉 ${esc(displayName(got))} arrived!`+(j.downloadReady?`<br><a href="/api/savedownload" download>⬇ Download updated .sav</a>`:"");
-    toast(`🎉 You received ${esc(pretty(got.species))}!`,4000);
-  }catch(e){ st.innerHTML=`<span style="color:var(--bad)">${esc(e.message)}</span>`; btn.disabled=false; btn.textContent="Wonder Trade"; }
+    const j=await post("/api/wondertrade",{source:k,index:gi});
+    TRADE={id:j.id,source:k,index:gi,mon:m,started:Date.now()};
+    closeDrawer(); render(); toast(`🎲 ${esc(displayName(m))} is off to find a partner!`);
+    pollTrade();
+  }catch(e){ toast("⚠️ "+esc(e.message),5000); if(e.data?.conflict) loadCloud(false,true); }
 }
+async function pollTrade(){
+  if(!TRADE) return;
+  let job; try{ job=await api("/api/wondertrade/"+TRADE.id); }catch{ return setTimeout(pollTrade,3000); }
+  if(job.status==="waiting") return setTimeout(pollTrade,1500);
+  const t=TRADE; TRADE=null;
+  if(job.status==="done"){
+    if(t.source==="cloud") await loadCloud(false,true);
+    else { STORES.save.boxes[job.index]=job.received; STORES.save.base[job.index]=job.received; DOWNLOAD_READY=true; }
+    const got=job.received, msg=`🎉 ${displayName(got)}${got.nickname&&got.nickname!==pretty(got.species)?` (${pretty(got.species)})`:""} arrived${job.from?` from ${job.from}`:""}!`;
+    playJingle(); toast(esc(msg),6000); render();
+    if(document.hidden&&"Notification" in window&&Notification.permission==="granted") new Notification("Wonder Trade complete!",{body:msg,icon:spriteUrl(got)});
+    setTimeout(()=>{ STORES[t.source].cur=Math.floor(job.index/BOXSIZE); render(); openDrawer(t.source,job.index); playCry(got); },900);
+  }else{
+    if(job.received) toast(`⚠️ ${esc(job.error)} Your new Pokémon is backed up on the server.`,8000);
+    else toast((job.status==="cancelled"?"":"⚠️ ")+esc(job.error||"Trade cancelled."),5000);
+    render();
+  }
+  checkWaiting();
+}
+async function cancelTrade(){ if(!TRADE) return; try{ await api("/api/wondertrade/"+TRADE.id,{method:"DELETE"}); }catch{} }
+async function checkWaiting(){
+  try{ WAITING=(await api("/api/wondertrade/check")).waiting; }catch{ return; }
+  const hidden=Date.now()<+(localStorage.wtHideUntil||0);
+  $("banner").innerHTML=WAITING&&!hidden&&!TRADE?`<div class="fbar"><span class="txt">🎲 A trainer is waiting in Wonder Trade <small>· trade now for an instant match</small></span><button data-h="24">Hide 24h</button><button data-h="0">✕</button></div>`:"";
+}
+$("banner").addEventListener("click",e=>{ const b=e.target.closest("button[data-h]"); if(!b) return; if(+b.dataset.h) localStorage.wtHideUntil=Date.now()+864e5; $("banner").innerHTML=""; });
+setInterval(()=>{ if(STORES.cloud&&!document.hidden) checkWaiting(); },60000);
 
-/* ---------- radio ---------- */
+/* ---------- sounds: cries, jingle, radio ---------- */
 const radio=new LofiRadio();
-radio.onchange=()=>{ $("stationName").innerHTML=`📻 ${radio.station.name}`; $("playBtn").textContent=radio.playing?"❚❚":"▶";
-  $("musicBtn").classList.toggle("playing",radio.playing); localStorage.radioOn=radio.playing?"1":""; localStorage.radioStation=radio.stationIndex; };
-radio.stationIndex=+(localStorage.radioStation||0)%radio.stations.length; radio.onchange();
-$("musicBtn").onclick=e=>{ e.stopPropagation(); const menu=$("musicMenu"); const opening=menu.classList.contains("hidden"); menu.classList.toggle("hidden");
-  if(opening&&!radio.playing) radio.play(); };
-$("playBtn").onclick=()=>radio.toggle();
-$("nextBtn").onclick=()=>radio.next();
-$("vol").oninput=e=>radio.setVolume(+e.target.value);
-document.addEventListener("click",e=>{ if(!e.target.closest("#musicMenu,#musicBtn")) $("musicMenu").classList.add("hidden"); });
-
-/* ---------- events ---------- */
-/* ---------- cries + tap animation ---------- */
 const cryCache=new Map();
 $("criesOn").checked=localStorage.cries!=="off";
 $("criesOn").onchange=e=>{ localStorage.cries=e.target.checked?"on":"off"; };
@@ -568,6 +816,17 @@ function playCry(m){
   let a=cryCache.get(m.species);
   if(!a){ a=new Audio(`/cry/${m.species}.mp3`); a.volume=.55; cryCache.set(m.species,a); }
   a.currentTime=0; a.play().then(()=>radio.duck(Math.max(1,a.duration||1.2))).catch(()=>{});
+}
+let jctx;
+function playJingle(){ // short original "trade complete" fanfare
+  try{
+    jctx=jctx||new (window.AudioContext||window.webkitAudioContext)(); jctx.resume();
+    const t0=jctx.currentTime+.05; radio.duck(2);
+    [[72,0,.12],[76,.12,.12],[79,.24,.12],[84,.36,.3],[83,.7,.12],[84,.82,.5]].forEach(([n,t,d])=>{
+      const o=jctx.createOscillator(), g=jctx.createGain(); o.type="square"; o.frequency.value=440*2**((n-69)/12);
+      g.gain.setValueAtTime(0,t0+t); g.gain.linearRampToValueAtTime(.08,t0+t+.01); g.gain.exponentialRampToValueAtTime(.001,t0+t+d);
+      o.connect(g).connect(jctx.destination); o.start(t0+t); o.stop(t0+t+d+.05); });
+  }catch{}
 }
 function tapAnim(slot,m){
   slot.classList.remove("pressed"); void slot.offsetWidth; slot.classList.add("pressed");
@@ -579,41 +838,53 @@ function tapAnim(slot,m){
     slot.appendChild(s); setTimeout(()=>s.remove(),750);
   }
 }
-$("grid").addEventListener("click",e=>{
-  const c=e.target.closest(".slot[data-gi]"); if(!c) return;
-  const gi=+c.dataset.gi, m=DATA.cloudBoxes[gi];
-  playCry(m); tapAnim(c,m);
-  setTimeout(()=>openDrawer(gi),320); // let the hop play before the panel slides over it
-});
-$("q").addEventListener("input",()=>{PAGE=0;render();});
-$("sort").addEventListener("change",()=>{PAGE=0;render();});
-$("fShiny").onclick=e=>{FILTER.shiny=!FILTER.shiny;e.currentTarget.classList.toggle("on");PAGE=0;render();};
-$("fPerfect").onclick=e=>{FILTER.perfect=!FILTER.perfect;e.currentTarget.classList.toggle("on");PAGE=0;render();};
-$("boxsel").onchange=e=>{CURBOX=+e.target.value;render();e.target.blur();};
-$("prev").onclick=()=>step(-1);
-$("next").onclick=()=>step(1);
-$("refresh").onclick=()=>load(true,true);
-$("srcCloud").onclick=()=>{ if(SOURCE!=="cloud") load(false); };
-$("srcSave").onclick=()=>$("savefile").click();
+radio.onchange=()=>{ $("stationName").innerHTML=`📻 ${radio.station.name}`; $("playBtn").textContent=radio.playing?"❚❚":"▶";
+  $("musicBtn").classList.toggle("playing",radio.playing); localStorage.radioStation=radio.stationIndex; };
+radio.stationIndex=+(localStorage.radioStation||0)%radio.stations.length; radio.onchange();
+$("musicBtn").onclick=e=>{ e.stopPropagation(); const menu=$("musicMenu"); const opening=menu.classList.contains("hidden"); menu.classList.toggle("hidden"); if(opening&&!radio.playing) radio.play(); };
+$("playBtn").onclick=()=>radio.toggle();
+$("nextBtn").onclick=()=>radio.next();
+$("vol").oninput=e=>radio.setVolume(+e.target.value);
+document.addEventListener("click",e=>{ if(!e.target.closest("#musicMenu,#musicBtn")) $("musicMenu").classList.add("hidden"); });
+
+/* ---------- taps ---------- */
+function onSlotTap(k,gi,el){
+  FOCUS=k;
+  const m=STORES[k].boxes[gi];
+  if(HOLD) return placeHold(k,gi);
+  if(!isFilled(m)) return;
+  if(ARRANGE){ pickUp(k,gi); return; }
+  playCry(m); tapAnim(el,m);
+  setTimeout(()=>openDrawer(k,gi),320); // let the hop play before the panel slides over it
+}
+
+/* ---------- controls ---------- */
+$("q").addEventListener("input",()=>{ for(const k in STORES) if(STORES[k]) STORES[k].page=0; render(); });
+$("sort").addEventListener("change",()=>{ for(const k in STORES) if(STORES[k]) STORES[k].page=0; render(); });
+$("fShiny").onclick=e=>{FILTER.shiny=!FILTER.shiny;e.currentTarget.classList.toggle("on");render();};
+$("fPerfect").onclick=e=>{FILTER.perfect=!FILTER.perfect;e.currentTarget.classList.toggle("on");render();};
+$("arrangeBtn").onclick=()=>{ ARRANGE=!ARRANGE; if(!ARRANGE) HOLD=null; render(); toast(ARRANGE?"✋ Arrange on — tap a Pokémon to pick it up, tap a slot to drop it.":"Arrange off"); };
+$("refresh").onclick=async()=>{ if(anyDirty()&&!confirm("Syncing will discard your unsaved changes. Continue?")) return; RELEASED=0; HISTORY=[]; HOLD=null; if(STORES.save) STORES.save.boxes=STORES.save.base.slice(); await loadCloud(true); toast("✓ Synced with Unbound Cloud"); };
+$("vCloud").onclick=()=>{ VIEW="cloud"; FOCUS="cloud"; render(); };
+$("vSave").onclick=()=>{ if(!STORES.save) return $("savefile").click(); VIEW="save"; FOCUS="save"; render(); };
+$("vBoth").onclick=()=>{ VIEW="both"; render(); };
 $("savefile").onchange=e=>{ const f=e.target.files[0]; if(f) loadSave(f); e.target.value=""; };
 $("backdrop").onclick=closeDrawer; $("closeDrawer").onclick=closeDrawer;
-window.addEventListener("keydown",e=>{
-  if(e.key==="Escape") return closeDrawer();
+addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ if(HOLD){ HOLD=null; render(); } else closeDrawer(); return; }
   if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
-  if(e.key==="ArrowLeft") step(-1);
-  if(e.key==="ArrowRight") step(1);
+  if(e.key==="ArrowLeft") step(FOCUS,-1);
+  if(e.key==="ArrowRight") step(FOCUS,1);
   if(e.key==="/"){ e.preventDefault(); $("q").focus(); }
+  if((e.metaKey||e.ctrlKey)&&e.key==="z"){ e.preventDefault(); undo(); }
 });
-let tx=0,ty=0;
-$("grid").addEventListener("touchstart",e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
-$("grid").addEventListener("touchend",e=>{ const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
-  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) step(dx<0?1:-1); },{passive:true});
+addEventListener("beforeunload",e=>{ if(anyDirty()||TRADE){ e.preventDefault(); e.returnValue=""; } });
 let sy=0;
 $("drawer").addEventListener("touchstart",e=>{sy=e.touches[0].clientY;},{passive:true});
 $("drawer").addEventListener("touchend",e=>{ if($("drawer").scrollTop<=0&&e.changedTouches[0].clientY-sy>80) closeDrawer(); },{passive:true});
 
-/* ---------- boot ---------- */
-fetch("/api/me").then(r=>r.ok?r.json():null).then(me=>{ if(me){ showApp(me.username); load(false); } else showLogin(); }).catch(showLogin);
+/* ---------- start ---------- */
+fetch("/api/me").then(r=>r.ok?r.json():null).then(me=>{ if(me){ showApp(me.username); boot(); } else showLogin(); }).catch(showLogin);
 </script>
 </body>
 </html>
