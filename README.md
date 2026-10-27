@@ -6,12 +6,10 @@ Sign in with your existing [Unbound Cloud](https://unboundcloud.net/) account an
 
 ![PC box](screenshots/box.png)
 
-![Moving Pokémon between a save file and the Cloud](screenshots/transfer.png)
-
 <p align="center">
-  <img src="screenshots/mobile-box.png" width="260" alt="Mobile box">
-  <img src="screenshots/mobile-summary.png" width="260" alt="Mobile summary">
-  <img src="screenshots/mobile-login.png" width="260" alt="Mobile login">
+  <img src="screenshots/mobile-box.png" width="250" alt="Mobile PC box">
+  <img src="screenshots/mobile-summary.png" width="250" alt="Mobile summary card">
+  <img src="screenshots/mobile-arrange.png" width="250" alt="Mobile arrange mode">
 </p>
 
 ## Features
@@ -29,11 +27,28 @@ Sign in with your existing [Unbound Cloud](https://unboundcloud.net/) account an
 - **Route Radio** 📻 — an original, procedurally generated lofi soundtrack (Web Audio, no audio files): jazzy chords, a soft Game Boy–style lead, boom-bap drums, vinyl crackle, rain and waves. Four stations.
 - **Light & dark mode**, installable-feeling mobile layout with a bottom-sheet summary.
 
+## Screenshots
+
+**Save file ⇄ Cloud, side by side** — drag & drop, or ✋ Arrange to tap-move. Changes wait for **Save**.
+
+![Moving a Pokémon from a save file into the Cloud](screenshots/transfer.png)
+
 | | |
 |---|---|
-| ![Summary](screenshots/summary.png) | ![Dark mode](screenshots/dark-mode.png) |
-| ![Shiny filter](screenshots/shiny-filter.png) | ![Route Radio](screenshots/route-radio.png) |
-| ![Save file](screenshots/save-file.png) | ![Login](screenshots/login.png) |
+| ![Summary card with Move / To Save / Release](screenshots/summary.png) | ![Arrange mode — carrying a Pokémon](screenshots/arrange.png) |
+| **Summary card** — IVs, EVs, nature, moves, Move / Transfer / Release, Wonder Trade | **Arrange** — pick up, drop anywhere, swap, release |
+| ![Save file opened next to the Cloud](screenshots/save-file.png) | ![Shiny filter sorted by best IVs](screenshots/shiny-filter.png) |
+| **Save files** — browse a `.sav` with the same UI | **Search & filters** — ✨ shiny, 💯 6IV, sort by best IVs |
+| ![Dark mode](screenshots/dark-mode.png) | ![Route Radio lofi player](screenshots/route-radio.png) |
+| **Dark mode** | **Route Radio** — original lofi + Pokémon cries |
+| ![Sign in](screenshots/login.png) | |
+| **Sign in** with your Unbound Cloud account | |
+
+<p align="center">
+  <img src="screenshots/mobile-save-file.png" width="250" alt="Mobile save file">
+  <img src="screenshots/mobile-transfer.png" width="250" alt="Mobile transfer with unsaved changes">
+  <img src="screenshots/mobile-login.png" width="250" alt="Mobile sign in">
+</p>
 
 ## Run it
 

@@ -144,6 +144,7 @@
   .fbar{display:flex;align-items:center;gap:8px;background:var(--card);color:var(--ink);border-radius:999px;box-shadow:0 10px 30px #23314a33;padding:6px 6px 6px 14px;font-size:13px;font-weight:800;animation:barIn .25s cubic-bezier(.3,1.4,.5,1);max-width:100%}
   .fbar img{width:34px;height:34px;object-fit:contain;margin-left:-6px}
   .fbar .txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  @media (max-width:680px){ .fbar .txt{white-space:normal;line-height:1.25} }
   .fbar .txt small{color:var(--dim);font-weight:700}
   .fbar button{border:none;border-radius:999px;padding:8px 13px;font-weight:900;font-size:12.5px;background:var(--card2);white-space:nowrap}
   .fbar button.primary{background:linear-gradient(135deg,#14b8a6,#0ea5e9);color:#fff}
@@ -154,8 +155,6 @@
   [data-theme=dark] .fbar.trade{background:linear-gradient(135deg,#3a2f12,#4a3812);color:#ffe9b3}
   .spin{display:inline-block;animation:spin 1.2s linear infinite}
   @keyframes barIn{from{opacity:0;transform:translateY(20px) scale(.95)}}
-  #banner{position:absolute;top:18px;left:50%;transform:translateX(-50%);z-index:7}
-  #banner .fbar{background:linear-gradient(135deg,#fff7d6,#ffe9b3);color:#3a2800;padding:5px 5px 5px 14px}
   .slot{position:relative;min-width:0;min-height:0;border-radius:18px;background:var(--slot);box-shadow:0 1px 3px #0000000f;display:flex;flex-direction:column;align-items:center;justify-content:center;
     padding:4px 4px 6px;cursor:pointer;transition:transform .14s,box-shadow .14s;animation:slotIn .28s ease-out backwards}
   .slot:hover{transform:translateY(-3px);box-shadow:0 8px 20px #0000001f}
@@ -188,7 +187,6 @@
   .slot.shiny{box-shadow:0 0 0 2.5px var(--gold),0 4px 14px #f5b41640}
   .slot .sp{position:absolute;top:4px;right:6px;color:var(--gold);font-size:13px;animation:twinkle 2.2s ease-in-out infinite}
   @keyframes twinkle{0%,100%{transform:scale(1) rotate(0);opacity:1}50%{transform:scale(.7) rotate(25deg);opacity:.6}}
-  body.has-floats main{padding-bottom:78px}
 
   /* ---------- summary panel ---------- */
   #backdrop{position:fixed;inset:0;background:#0f152266;opacity:0;pointer-events:none;transition:opacity .2s;z-index:19}
@@ -345,7 +343,6 @@
 
 <main id="app-main" class="hidden">
   <div id="loading"><div class="ball"></div><span id="loadingText">Loading…</span></div>
-  <div id="banner"></div>
 </main>
 
 <div id="floats"></div>
@@ -685,13 +682,15 @@ function renderFloats(){
     const changed=["cloud","save"].reduce((a,k)=>a+(STORES[k]?STORES[k].boxes.filter((m,i)=>m!==STORES[k].base[i]).length:0),0);
     h+=`<div class="fbar"><span class="dot"></span><span class="txt">Unsaved <small>· ${changed} slot${changed===1?"":"s"}${RELEASED?` · ${RELEASED} released`:""}</small></span><button data-act="undo" title="Undo">↶</button><button data-act="discard">Discard</button><button class="primary" data-act="commit">Save</button></div>`;
   }else if(DOWNLOAD_READY) h+=`<div class="fbar"><span class="txt">💾 Updated save ready <small>· replace your old .sav with it</small></span><button class="primary" data-act="download">Download</button><button data-act="dismissDl">✕</button></div>`;
+  if(WAITING&&!TRADE&&!HOLD&&Date.now()>=+(localStorage.wtHideUntil||0)&&!sessionStorage.wtHidden)
+    h+=`<div class="fbar trade"><span class="txt">🎲 A trainer is waiting in Wonder Trade <small>· trade now for an instant match</small></span><button data-act="hideWait24">Hide 24h</button><button data-act="hideWait">✕</button></div>`;
   $("floats").innerHTML=h;
-  document.body.classList.toggle("has-floats",!!h);
+  $("app-main").style.paddingBottom=h?($("floats").offsetHeight+22)+"px":"";
 }
 $("floats").addEventListener("click",e=>{
   const act=e.target.closest("[data-act]")?.dataset.act; if(!act) return;
   ({ cancelTrade:cancelTrade, cancelHold:()=>{HOLD=null;render();}, releaseHeld:()=>{ if(HOLD) release(HOLD.src,HOLD.idx); },
-     undo, discard, commit, download:()=>$("dl").click(), dismissDl:()=>{DOWNLOAD_READY=false;render();} })[act]?.();
+     undo, discard, commit, hideWait24:()=>{localStorage.wtHideUntil=Date.now()+864e5;renderFloats();}, hideWait:()=>{sessionStorage.wtHidden=1;renderFloats();}, download:()=>$("dl").click(), dismissDl:()=>{DOWNLOAD_READY=false;render();} })[act]?.();
 });
 setInterval(()=>{ if(TRADE) renderFloats(); },1000);
 
@@ -800,10 +799,8 @@ async function pollTrade(){
 async function cancelTrade(){ if(!TRADE) return; try{ await api("/api/wondertrade/"+TRADE.id,{method:"DELETE"}); }catch{} }
 async function checkWaiting(){
   try{ WAITING=(await api("/api/wondertrade/check")).waiting; }catch{ return; }
-  const hidden=Date.now()<+(localStorage.wtHideUntil||0);
-  $("banner").innerHTML=WAITING&&!hidden&&!TRADE?`<div class="fbar"><span class="txt">🎲 A trainer is waiting in Wonder Trade <small>· trade now for an instant match</small></span><button data-h="24">Hide 24h</button><button data-h="0">✕</button></div>`:"";
+  renderFloats();
 }
-$("banner").addEventListener("click",e=>{ const b=e.target.closest("button[data-h]"); if(!b) return; if(+b.dataset.h) localStorage.wtHideUntil=Date.now()+864e5; $("banner").innerHTML=""; });
 setInterval(()=>{ if(STORES.cloud&&!document.hidden) checkWaiting(); },60000);
 
 /* ---------- sounds: cries, jingle, radio ---------- */
