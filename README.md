@@ -18,6 +18,7 @@ Sign in with your existing [Unbound Cloud](https://unboundcloud.net/) account an
 - **PC boxes that fit one screen** — 6×5 on desktop, 5×6 on phones, 10×3 in landscape. No scrolling. Swipe or ←/→ to change boxes, or jump with the box picker. Every box gets its own wallpaper.
 - **HOME-style sprites** — 3D renders (shiny variants included), regional forms (Galarian, Alolan, Hisuian…), resized and cached server-side so boxes load fast.
 - **Search everything** — name, species, move, nature, item; multi-word (`shiny jolly`). Filter ✨ shiny or 💯 6IV, sort by best IVs / level / species. Results page 30 at a time.
+- **Cries & animations** — tap a Pokémon and it hops (shinies burst into sparkles) while its real cry plays; the music ducks underneath. Tap the portrait in the summary to hear it again. Cries can be switched off in the radio menu.
 - **Summary card** — IV bars with EVs shaded underneath, nature ▲▼, moves, ball, held item, OT, met data.
 - **Save files** — upload a `.sav` and browse it with the same UI (parsed by Unbound Cloud's own save reader).
 - **Wonder Trade** — from your Cloud *or* a save file. Cloud trades save straight back; save-file trades give you an updated `.sav` to download.
@@ -32,7 +33,7 @@ Sign in with your existing [Unbound Cloud](https://unboundcloud.net/) account an
 
 ## Run it
 
-Requires Node.js 20+.
+Requires Node.js 20+. Optional: `ffmpeg` on the PATH converts cries to MP3 so they play on iPhone/Safari (without it, cries are served as OGG).
 
 ```bash
 git clone https://github.com/0xSolarPunk/unbound-remastered
@@ -73,6 +74,6 @@ Unbound Cloud's web app is a React SPA backed by a small JSON + Socket.IO API. T
 
 ## Disclaimer
 
-Fan project, not affiliated with Nintendo, Game Freak, The Pokémon Company, or the Pokémon Unbound / Unbound Cloud developers. Pokémon and Pokémon character names are trademarks of Nintendo. Sprites are loaded at runtime from [PokeAPI/sprites](https://github.com/PokeAPI/sprites) and [msikma/pokesprite](https://github.com/msikma/pokesprite); none are bundled. The music is original and generated in code.
+Fan project, not affiliated with Nintendo, Game Freak, The Pokémon Company, or the Pokémon Unbound / Unbound Cloud developers. Pokémon and Pokémon character names are trademarks of Nintendo. Sprites and cries are loaded at runtime from [PokeAPI/sprites](https://github.com/PokeAPI/sprites), [PokeAPI/cries](https://github.com/PokeAPI/cries) and [msikma/pokesprite](https://github.com/msikma/pokesprite); none are bundled. The music is original and generated in code.
 
 License: MIT

@@ -4,6 +4,7 @@
 // forwarded to unboundcloud.net, and we keep just the returned account token.
 import http from "node:http";
 import { randomBytes } from "node:crypto";
+import { execFile } from "node:child_process";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join, extname } from "node:path";
@@ -102,6 +103,41 @@ async function sprite(species, shiny) {
   return job;
 }
 
+// ---------- cries (PokeAPI/cries, transcoded to MP3 when ffmpeg exists) ----------
+const HAS_FFMPEG = await new Promise((r) => execFile("ffmpeg", ["-version"], (e) => r(!e)));
+
+// Cache a derived asset on disk; a ".none" marker remembers misses so we don't refetch.
+async function cached(key, ext, produce) {
+  const file = join(SPRITE_DIR, key + ext);
+  try { return await readFile(file); } catch {}
+  try { await readFile(file + ".none"); return null; } catch {}
+  if (inflight.has(file)) return inflight.get(file);
+  const job = (async () => {
+    const out = await produce().catch(() => null);
+    await writeFile(out ? file : file + ".none", out || "");
+    return out;
+  })().finally(() => inflight.delete(file));
+  inflight.set(file, job);
+  return job;
+}
+async function getBuf(u) {
+  const r = await fetch(u, { headers: { "user-agent": "unbound-remastered" } }).catch(() => null);
+  return r && r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+}
+function cry(species) {
+  return cached(species.replace(/[^\w]/g, "") + "_cry", HAS_FFMPEG ? ".mp3" : ".ogg", async () => {
+    const id = pokeapiId(species);
+    if (!id) return null;
+    const ogg = await getBuf(`https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${id}.ogg`)
+      || await getBuf(`https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/legacy/${id}.ogg`);
+    if (!ogg || !HAS_FFMPEG) return ogg;
+    return new Promise((resolve) => {
+      const p = execFile("ffmpeg", ["-v", "error", "-i", "pipe:0", "-ac", "1", "-b:a", "64k", "-f", "mp3", "pipe:1"],
+        { encoding: "buffer", maxBuffer: 8 << 20 }, (e, out) => resolve(e ? ogg : out));
+      p.stdin.end(ogg);
+    });
+  });
+}
 // ---------- Wonder Trade over socket.io ----------
 // Resolves with the received Pokémon. Disconnecting before "message" cancels the
 // trade cleanly — your Pokémon is only given up once a partner is matched.
@@ -152,6 +188,15 @@ const server = http.createServer(async (req, res) => {
       const img = await sprite(species, url.searchParams.get("shiny") === "1");
       if (!img) return send(res, 404, "no sprite", "text/plain");
       return send(res, 200, img, "image/webp", { "cache-control": "public, max-age=2592000, immutable" });
+    }
+
+    if (p.startsWith("/cry/") && req.method === "GET") {
+      const species = decodeURIComponent(p.slice(5)).replace(/\.\w+$/, "");
+      if (!/^SPECIES_[A-Z0-9_]+$/.test(species)) return send(res, 400, "bad species", "text/plain");
+      const buf = await cry(species);
+      if (!buf) return send(res, 404, "none", "text/plain");
+      const type = buf.subarray(0, 4).toString() === "OggS" ? "audio/ogg" : "audio/mpeg";
+      return send(res, 200, buf, type, { "cache-control": "public, max-age=2592000, immutable" });
     }
 
     if (p.startsWith("/api/")) {

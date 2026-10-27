@@ -171,5 +171,11 @@ export class LofiRadio {
     if (this.playing) { this.step = 0; this.loopCount = 0; this.motif = this._makeMotif(); this.nextTime = this.ctx.currentTime + 0.15; this._ambience(this.station.ambience); }
     this.onchange();
   }
+  // dip the music under a Pokémon cry, then bring it back
+  duck(seconds = 1.2) {
+    if (!this.playing) return;
+    const t = this.ctx.currentTime, g = this.master.gain;
+    g.cancelScheduledValues(t); g.setTargetAtTime(this.volume * 0.25, t, 0.05); g.setTargetAtTime(this.volume, t + seconds, 0.3);
+  }
   setVolume(v) { this.volume = v; if (this.playing) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.1); }
 }

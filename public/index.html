@@ -126,6 +126,23 @@
   .slot:hover .spr{animation:hop .45s ease}
   @keyframes hop{40%{transform:translateY(-7%) scale(1.04)}}
   @keyframes slotIn{from{opacity:0;transform:scale(.92)}}
+  /* tap: squash, hop, land + ring burst */
+  .slot.pressed{animation:none;z-index:2}
+  .slot.pressed .spr{animation:tapHop .55s cubic-bezier(.3,1.4,.5,1)}
+  @keyframes tapHop{0%{transform:scale(1)}15%{transform:scaleX(1.18) scaleY(.78) translateY(8%)}45%{transform:scaleX(.92) scaleY(1.1) translateY(-22%)}70%{transform:scaleX(1.06) scaleY(.94) translateY(0)}100%{transform:scale(1)}}
+  .slot.pressed::after{content:"";position:absolute;inset:-2px;border-radius:inherit;border:3px solid var(--acc);animation:ring .55s ease-out forwards;pointer-events:none}
+  .slot.shiny.pressed::after{border-color:var(--gold)}
+  @keyframes ring{from{opacity:.9;transform:scale(.9)}to{opacity:0;transform:scale(1.25)}}
+  .spark{position:absolute;left:50%;top:45%;color:var(--gold);font-size:14px;pointer-events:none;animation:spark .7s ease-out forwards;z-index:3}
+  @keyframes spark{from{opacity:1;transform:translate(-50%,-50%) scale(.4)}to{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.2) rotate(120deg)}}
+  .hero .halo{cursor:pointer}
+  .hero img{animation:heroIdle 3.2s ease-in-out infinite}
+  .hero img.pop{animation:heroPop .6s cubic-bezier(.3,1.5,.5,1),heroIdle 3.2s ease-in-out .6s infinite}
+  @keyframes heroIdle{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.025)}}
+  @keyframes heroPop{0%{transform:scale(.4) translateY(30%);opacity:0}60%{transform:scale(1.08) translateY(-6%);opacity:1}100%{transform:scale(1)}}
+  .hero .halo.cry::before{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid #ffffffcc;animation:ring .7s ease-out forwards}
+  .switch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1.5px dashed var(--line);font-size:13px;font-weight:800;cursor:pointer}
+  .switch input{width:18px;height:18px;accent-color:var(--acc)}
   .slot.empty{background:var(--slot-empty);box-shadow:inset 0 0 0 2px #ffffff40;cursor:default;animation:none}
   .slot.empty:hover{transform:none;box-shadow:inset 0 0 0 2px #ffffff40}
   .spr{flex:1;min-height:0;width:100%;object-fit:contain;filter:drop-shadow(0 3px 3px #0000001f);opacity:0;transition:opacity .25s}
@@ -277,6 +294,7 @@
       <button class="iconbtn" id="nextBtn" title="Next station">⏭</button>
       <input type="range" id="vol" min="0" max="1" step="0.01" value="0.6" aria-label="Volume">
     </div>
+    <label class="switch">🔊 Pokémon cries on tap <input type="checkbox" id="criesOn"></label>
   </div>
 </header>
 
@@ -475,7 +493,7 @@ function openDrawer(gi){
   const box=DATA.cloudTitles[Math.floor(gi/BOXSIZE)]||"";
   $("dbody").innerHTML=`
     <div class="hero" style="--wall:${m.shiny?"linear-gradient(160deg,#fde68a,#fdba74)":WALLS[Math.floor(gi/BOXSIZE)%WALLS.length]}">
-      <div class="halo"><img src="${spriteUrl(m)}" alt=""></div>
+      <div class="halo" id="heroHalo" title="Tap to hear its cry"><img id="heroImg" class="pop" src="${spriteUrl(m)}" alt=""></div>
       <h2>${esc(displayName(m))}${m.shiny?' <span style="color:#b45309">✦</span>':''}</h2>
       <div class="sub">${esc(pretty(m.species))} · Lv. ${lvlFromExp(m.experience)} · ${m.gender==="M"?"♂":m.gender==="F"?"♀":"—"}</div>
       <div class="tags">
@@ -507,6 +525,8 @@ function openDrawer(gi){
       </div>
     </div>`;
   $("wtBtn").onclick=startWonderTrade;
+  $("heroHalo").onclick=()=>{ playCry(m); const h=$("heroHalo"), img=$("heroImg");
+    h.classList.remove("cry"); img.classList.remove("pop"); void h.offsetWidth; h.classList.add("cry"); img.classList.add("pop"); };
   $("drawer").scrollTop=0; $("drawer").classList.add("open"); $("backdrop").classList.add("open");
 }
 function closeDrawer(){ $("drawer").classList.remove("open"); $("backdrop").classList.remove("open"); }
@@ -539,7 +559,32 @@ $("vol").oninput=e=>radio.setVolume(+e.target.value);
 document.addEventListener("click",e=>{ if(!e.target.closest("#musicMenu,#musicBtn")) $("musicMenu").classList.add("hidden"); });
 
 /* ---------- events ---------- */
-$("grid").addEventListener("click",e=>{ const c=e.target.closest(".slot[data-gi]"); if(c) openDrawer(+c.dataset.gi); });
+/* ---------- cries + tap animation ---------- */
+const cryCache=new Map();
+$("criesOn").checked=localStorage.cries!=="off";
+$("criesOn").onchange=e=>{ localStorage.cries=e.target.checked?"on":"off"; };
+function playCry(m){
+  if(!$("criesOn").checked) return;
+  let a=cryCache.get(m.species);
+  if(!a){ a=new Audio(`/cry/${m.species}.mp3`); a.volume=.55; cryCache.set(m.species,a); }
+  a.currentTime=0; a.play().then(()=>radio.duck(Math.max(1,a.duration||1.2))).catch(()=>{});
+}
+function tapAnim(slot,m){
+  slot.classList.remove("pressed"); void slot.offsetWidth; slot.classList.add("pressed");
+  setTimeout(()=>slot.classList.remove("pressed"),650);
+  if(m.shiny) for(let i=0;i<7;i++){
+    const s=document.createElement("span"), ang=i/7*Math.PI*2, r=38+Math.random()*18;
+    s.className="spark"; s.textContent="✦";
+    s.style.setProperty("--dx",Math.cos(ang)*r+"px"); s.style.setProperty("--dy",Math.sin(ang)*r+"px");
+    slot.appendChild(s); setTimeout(()=>s.remove(),750);
+  }
+}
+$("grid").addEventListener("click",e=>{
+  const c=e.target.closest(".slot[data-gi]"); if(!c) return;
+  const gi=+c.dataset.gi, m=DATA.cloudBoxes[gi];
+  playCry(m); tapAnim(c,m);
+  setTimeout(()=>openDrawer(gi),320); // let the hop play before the panel slides over it
+});
 $("q").addEventListener("input",()=>{PAGE=0;render();});
 $("sort").addEventListener("change",()=>{PAGE=0;render();});
 $("fShiny").onclick=e=>{FILTER.shiny=!FILTER.shiny;e.currentTarget.classList.toggle("on");PAGE=0;render();};
