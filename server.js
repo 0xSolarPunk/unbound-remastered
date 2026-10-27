@@ -55,13 +55,29 @@ async function readBody(req) {
   for await (const c of req) chunks.push(c);
   return Buffer.concat(chunks);
 }
-async function upstream(path, payload) {
-  const r = await fetch(UPSTREAM + path, {
-    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload),
-  });
+// POST to Unbound Cloud. Always resolves to { ok, status, json } where failures carry a
+// human-readable json.errorMsg. Unbound sometimes answers with a bare string, and when it's
+// down Cloudflare answers with an HTML error page.
+async function upstream(path, payload, timeoutMs = 45000) {
+  let r;
+  try {
+    r = await fetch(UPSTREAM + path, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload), signal: AbortSignal.timeout(timeoutMs) });
+  } catch (e) {
+    const msg = e.name === "TimeoutError" ? "Unbound Cloud didn't respond in time — please try again in a minute."
+      : "Couldn't reach Unbound Cloud — please try again.";
+    return { ok: false, status: 504, json: { errorMsg: msg } };
+  }
   const text = await r.text();
-  let json; try { json = JSON.parse(text); } catch { json = { errorMsg: text }; }
-  return { ok: r.ok, status: r.status, json };
+  let json;
+  try { json = JSON.parse(text); } catch { json = null; }
+  if (typeof json === "string") json = { errorMsg: json.replace(/^ERROR:\s*/i, "") };
+  if (!json || typeof json !== "object") {
+    json = { errorMsg: r.status >= 500 || /^\s*</.test(text)
+      ? `Unbound Cloud is having trouble right now (error ${r.status}) — please try again in a few minutes.`
+      : text.slice(0, 200) || "Unexpected response from Unbound Cloud." };
+  }
+  return { ok: r.ok && !json.errorMsg, status: r.ok && json.errorMsg ? 400 : r.status, json };
 }
 const isFilled = (m) => m && m.species && m.species !== "SPECIES_NONE" && Object.keys(m).length > 0;
 const fetchCloud = (s) => upstream("/getAccountCloudData", { username: s.username, accountCode: s.accountCode, randomizer: false });
@@ -217,7 +233,8 @@ const server = http.createServer(async (req, res) => {
       const up = await upstream("/checkUser", { username: String(username).trim(), password: String(password) });
       if (!up.ok || !up.json.accountCode) {
         const code = up.json.errorMsg || "LOGIN_FAILED";
-        const msg = { INVALID_PASSWORD: "Wrong password.", USER_NOT_FOUND: "No Unbound Cloud account with that name.", INVALID_USERNAME: "No Unbound Cloud account with that name." }[code] || code;
+        const noAcct = "No Unbound Cloud account with that username or email.";
+        const msg = { INVALID_PASSWORD: "Wrong password.", USER_NOT_FOUND: noAcct, INVALID_USERNAME: noAcct, NO_ACCOUNT_FOUND: noAcct }[code] || code;
         return send(res, 401, { error: msg });
       }
       if (up.json.activated === false) return send(res, 403, { error: "This account isn't activated yet — activate it on unboundcloud.net first." });
@@ -254,7 +271,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     const s = getSession(req);
-    if (p === "/api/me") return s ? send(res, 200, { username: s.username }) : send(res, 401, { error: "LOGGED_OUT" });
+    if (p === "/api/me") return send(res, 200, { username: s ? s.username : null });
     if (!s) return send(res, 401, { error: "LOGGED_OUT" });
     const S = st(s.token);
 
@@ -284,7 +301,7 @@ const server = http.createServer(async (req, res) => {
       const buf = await readBody(req);
       const file = {}; for (let i = 0; i < buf.length; i++) file[i] = buf[i];
       const up = await upstream("/uploadSaveFile", { file, isSaveFile: true, username: s.username, accountCode: s.accountCode });
-      if (!up.ok || !up.json.boxes) return send(res, 400, { error: up.json.errorMsg || "Unsupported save file." });
+      if (!up.ok || !up.json.boxes) return send(res, up.status >= 500 ? 502 : 400, { error: up.json.errorMsg || "That doesn't look like a Pokémon Unbound save file." });
       const d = up.json;
       S.save = { boxes: d.boxes, titles: d.titles, gameId: d.gameId, randomizer: !!d.randomizer, fileIdNumber: d.fileIdNumber,
         saveFileData: d.saveFileData, original: buf, newSaveFileData: null, name: url.searchParams.get("name") || "savefile.sav" };
@@ -301,8 +318,7 @@ const server = http.createServer(async (req, res) => {
     // no tampering) and that the only ones missing are the ones you chose to release.
     if (p === "/api/commit" && req.method === "POST") {
       const { cloudBoxes, saveBoxes, released = 0 } = await body();
-      if (!S.cloud) return send(res, 409, { error: "Reload your Cloud first." });
-      if (saveBoxes && !S.save) return send(res, 409, { error: "Your save file session expired — upload it again." });
+      if (!S.cloud || (saveBoxes && !S.save)) return send(res, 409, { expired: true, error: "The server lost track of what you were editing (it may have restarted)." });
       if ([...S.trades.values()].some((j) => j.status === "waiting")) return send(res, 409, { error: "Finish or cancel your Wonder Trade first." });
       const nextCloud = cloudBoxes || S.cloud.boxes, nextSave = saveBoxes || S.save?.boxes || [];
       if (nextCloud.length !== S.cloud.boxes.length || (S.save && nextSave.length !== S.save.boxes.length)) return send(res, 400, { error: "Box layout mismatch — reload and try again." });
@@ -345,7 +361,7 @@ const server = http.createServer(async (req, res) => {
       const sv = S.save;
       if (!sv?.newSaveFileData) return send(res, 404, "No updated save yet.", "text/plain");
       return send(res, 200, Buffer.from(sv.newSaveFileData.data || sv.newSaveFileData), "application/octet-stream",
-        { "content-disposition": `attachment; filename="${sv.name.replace(/"/g, "")}"` });
+        { "content-disposition": `attachment; filename="${sv.name.replace(/[^\x20-\x7e]|"/g, "_")}"; filename*=UTF-8''${encodeURIComponent(sv.name)}` });
     }
 
     // Is another trainer already waiting in the Wonder Trade pool? (instant match)

@@ -286,7 +286,7 @@
 
 <!-- ============ login ============ -->
 <div id="login" class="hidden">
-  <form class="login-card" id="loginForm" autocomplete="on">
+  <form class="login-card" id="loginForm" method="post" action="#" autocomplete="on" onsubmit="return false">
     <div class="ball"></div>
     <h1>Unbound <span>Remastered</span></h1>
     <p>Sign in with your Unbound Cloud account</p>
@@ -399,7 +399,7 @@ async function api(path,opts){
   const r=await fetch(path,opts);
   if(r.status===401){ showLogin(); throw new Error("Please sign in again."); }
   const j=await r.json().catch(()=>({}));
-  if(!r.ok) throw Object.assign(new Error(j.error||"Request failed"),{data:j});
+  if(!r.ok) throw Object.assign(new Error(String(j.error||`Request failed (${r.status})`).slice(0,240)),{data:j});
   return j;
 }
 const post=(path,body)=>api(path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
@@ -463,7 +463,7 @@ async function loadSave(file){
   setLoading("Reading "+file.name+"…");
   try{
     const j=await api("/api/savefile?name="+encodeURIComponent(file.name),{method:"POST",headers:{"content-type":"application/octet-stream"},body:await file.arrayBuffer()});
-    setStore("save",j.boxes,j.titles||Array.from({length:Math.ceil(j.boxes.length/BOXSIZE)},(_,i)=>"Box "+(i+1)),{name:file.name,randomizer:j.randomizer});
+    setStore("save",j.boxes,j.titles||Array.from({length:Math.ceil(j.boxes.length/BOXSIZE)},(_,i)=>"Box "+(i+1)),{name:file.name,randomizer:j.randomizer,file});
     if(j.cloudBoxes) setStore("cloud",j.cloudBoxes,j.cloudTitles);
     DOWNLOAD_READY=false;
     VIEW=innerWidth>=1100?"both":"save"; FOCUS="save";
@@ -625,7 +625,7 @@ function pushHistory(){ HISTORY.push({cloud:STORES.cloud.boxes.slice(),save:STOR
 function placeHold(k,gi){
   const a=HOLD; HOLD=null;
   if(!a||(a.src===k&&a.idx===gi)) return render();
-  if(resultsMode()&&!isFilled(STORES[k].boxes[gi])) return render();
+  if(resultsMode()){ HOLD=a; toast("Clear the search and filters to drop it into a box."); return; }
   if(a.src!==k&&STORES.save?.randomizer){ toast("Randomizer saves can't exchange Pokémon with the Cloud."); return render(); }
   if(TRADE&&TRADE.source===k&&TRADE.index===gi){ toast("That Pokémon is out on a Wonder Trade."); return render(); }
   pushHistory();
@@ -649,22 +649,41 @@ function sendTo(k,gi){
   pushHistory(); const mon=STORES[k].boxes[gi]; O.boxes[at]=mon; STORES[k].boxes[gi]=emptyLike(k);
   O.cur=Math.floor(at/BOXSIZE); render(); toast(`${esc(displayName(mon))} → ${esc(where(o,at))}`);
 }
+function downloadSave(){ const l=$("dl"); l.download=STORES.save?.name||"savefile.sav"; l.click(); }
 function undo(){ const h=HISTORY.pop(); if(!h) return; STORES.cloud.boxes=h.cloud; if(STORES.save&&h.save) STORES.save.boxes=h.save; RELEASED=h.released; HOLD=null; render(); }
 function discard(){ if(!confirm("Discard all unsaved changes?")) return; for(const k of ["cloud","save"]) if(STORES[k]) STORES[k].boxes=STORES[k].base.slice(); RELEASED=0; HISTORY=[]; HOLD=null; render(); }
-async function commit(){
+// The server keeps the snapshot we're editing in memory. If it restarted, re-send it: re-upload the
+// save file / re-pull the Cloud, and only retry if both still match what we started from.
+async function resync(){
+  const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  if(STORES.save){
+    const j=await api("/api/savefile?name="+encodeURIComponent(STORES.save.name),{method:"POST",headers:{"content-type":"application/octet-stream"},body:await STORES.save.file.arrayBuffer()});
+    if(!same(j.boxes,STORES.save.base)) throw new Error("Your save file no longer matches what you were editing. Discard your changes and open it again.");
+    if(!same(j.cloudBoxes,STORES.cloud.base)) throw Object.assign(new Error("Your Cloud changed since you loaded it."),{data:{conflict:true}});
+  }else{
+    const d=await api("/api/data?live=1");
+    if(!same(d.cloudBoxes,STORES.cloud.base)) throw Object.assign(new Error("Your Cloud changed since you loaded it."),{data:{conflict:true}});
+  }
+}
+async function commit(retried){
   const body={released:RELEASED};
   if(dirty("cloud")) body.cloudBoxes=STORES.cloud.boxes;
   if(dirty("save")) body.saveBoxes=STORES.save.boxes;
   const what=[]; if(RELEASED) what.push(`release ${RELEASED} Pokémon forever`); if(body.saveBoxes) what.push("give you an updated .sav to put back in your game");
-  if(what.length&&!confirm(`Saving will ${what.join(" and ")}. Continue?`)) return;
+  if(!retried&&what.length&&!confirm(`Saving will ${what.join(" and ")}. Continue?`)) return;
   setLoading("Saving…");
   try{
     const j=await post("/api/commit",body);
     for(const k of ["cloud","save"]) if(STORES[k]) STORES[k].base=STORES[k].boxes.slice();
     RELEASED=0; HISTORY=[];
-    if(j.saveChanged){ DOWNLOAD_READY=true; $("dl").click(); toast("✓ Saved! Your updated save is downloading — replace your old .sav with it.",7000); }
+    if(j.saveChanged){ DOWNLOAD_READY=true; downloadSave();
+      try{ STORES.save.file=new File([await (await fetch("/api/savedownload")).arrayBuffer()],STORES.save.name); }catch{} toast("✓ Saved! Your updated save is downloading — replace your old .sav with it.",7000); }
     else toast("✓ Saved to Unbound Cloud");
   }catch(e){
+    if(e.data?.expired&&!retried){
+      try{ setLoading("Reconnecting…"); await resync(); setLoading(null); return commit(true); }
+      catch(e2){ e=e2; }
+    }
     if(e.data?.conflict){ for(const k of ["cloud","save"]) if(STORES[k]) STORES[k].boxes=STORES[k].base.slice(); RELEASED=0; HISTORY=[]; await loadCloud(false,true); }
     toast("⚠️ "+esc(e.message),7000);
   }
@@ -690,7 +709,7 @@ function renderFloats(){
 $("floats").addEventListener("click",e=>{
   const act=e.target.closest("[data-act]")?.dataset.act; if(!act) return;
   ({ cancelTrade:cancelTrade, cancelHold:()=>{HOLD=null;render();}, releaseHeld:()=>{ if(HOLD) release(HOLD.src,HOLD.idx); },
-     undo, discard, commit, hideWait24:()=>{localStorage.wtHideUntil=Date.now()+864e5;renderFloats();}, hideWait:()=>{sessionStorage.wtHidden=1;renderFloats();}, download:()=>$("dl").click(), dismissDl:()=>{DOWNLOAD_READY=false;render();} })[act]?.();
+     undo, discard, commit, hideWait24:()=>{localStorage.wtHideUntil=Date.now()+864e5;renderFloats();}, hideWait:()=>{sessionStorage.wtHidden=1;renderFloats();}, download:()=>downloadSave(), dismissDl:()=>{DOWNLOAD_READY=false;render();} })[act]?.();
 });
 setInterval(()=>{ if(TRADE) renderFloats(); },1000);
 
@@ -784,7 +803,8 @@ async function pollTrade(){
   const t=TRADE; TRADE=null;
   if(job.status==="done"){
     if(t.source==="cloud") await loadCloud(false,true);
-    else { STORES.save.boxes[job.index]=job.received; STORES.save.base[job.index]=job.received; DOWNLOAD_READY=true; }
+    else { STORES.save.boxes[job.index]=job.received; STORES.save.base[job.index]=job.received; DOWNLOAD_READY=true;
+      try{ STORES.save.file=new File([await (await fetch("/api/savedownload")).arrayBuffer()],STORES.save.name); }catch{} }
     const got=job.received, msg=`🎉 ${displayName(got)}${got.nickname&&got.nickname!==pretty(got.species)?` (${pretty(got.species)})`:""} arrived${job.from?` from ${job.from}`:""}!`;
     playJingle(); toast(esc(msg),6000); render();
     if(document.hidden&&"Notification" in window&&Notification.permission==="granted") new Notification("Wonder Trade complete!",{body:msg,icon:spriteUrl(got)});
@@ -881,7 +901,7 @@ $("drawer").addEventListener("touchstart",e=>{sy=e.touches[0].clientY;},{passive
 $("drawer").addEventListener("touchend",e=>{ if($("drawer").scrollTop<=0&&e.changedTouches[0].clientY-sy>80) closeDrawer(); },{passive:true});
 
 /* ---------- start ---------- */
-fetch("/api/me").then(r=>r.ok?r.json():null).then(me=>{ if(me){ showApp(me.username); boot(); } else showLogin(); }).catch(showLogin);
+fetch("/api/me").then(r=>r.json()).then(me=>{ if(me.username){ showApp(me.username); boot(); } else showLogin(); }).catch(showLogin);
 </script>
 </body>
 </html>
