@@ -23,10 +23,10 @@ const PUBLIC_DIR = join(__dirname, "public");
 await mkdir(SPRITE_DIR, { recursive: true });
 
 // ---------- sessions (token -> { username, accountCode, expires }) ----------
-const SESSIONS_FILE = join(DATA_DIR, "sessions.json");
-let sessions = {};
-try { sessions = JSON.parse(await readFile(SESSIONS_FILE, "utf8")); } catch {}
-const saveSessions = () => writeFile(SESSIONS_FILE, JSON.stringify(sessions));
+// Security fix: account tokens are held in memory only and are NEVER written to
+// disk. A leaked or copied data directory therefore contains no usable tokens,
+// and a server restart logs everyone out (they simply sign in again).
+const sessions = {};
 // Per-session working state (memory only): the Cloud/save snapshot the browser is editing,
 // and any running Wonder Trades. token -> { cloud, save, trades }
 const state = new Map();
@@ -240,9 +240,11 @@ const server = http.createServer(async (req, res) => {
       if (up.json.activated === false) return send(res, 403, { error: "This account isn't activated yet — activate it on unboundcloud.net first." });
       const token = randomBytes(24).toString("hex");
       sessions[token] = { username: up.json.username, accountCode: up.json.accountCode, expires: Date.now() + SESSION_DAYS * 864e5 };
-      await saveSessions();
+      // Secure is set only for the public https deployment (SECURE_COOKIES=1);
+      // a Secure cookie would never be sent back over plain local http.
+      const secureFlag = process.env.SECURE_COOKIES === "1" ? "; Secure" : "";
       return send(res, 200, { username: up.json.username }, undefined, {
-        "set-cookie": `ubr_sid=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`,
+        "set-cookie": `ubr_sid=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}${secureFlag}`,
       });
     }
 
@@ -277,7 +279,7 @@ const server = http.createServer(async (req, res) => {
 
     if (p === "/api/logout" && req.method === "POST") {
       for (const j of S.trades.values()) j.cancel?.();
-      delete sessions[s.token]; state.delete(s.token); await saveSessions();
+      delete sessions[s.token]; state.delete(s.token);
       return send(res, 200, { ok: true }, undefined, { "set-cookie": "ubr_sid=; Path=/; Max-Age=0" });
     }
 
