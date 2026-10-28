@@ -557,7 +557,7 @@ function slotHtml(k,m,gi,n){
   if(TRADE&&TRADE.source===k&&TRADE.index===gi) cls.push("trading");
   return `<div class="${cls.join(" ")}" data-gi="${gi}" draggable="true" style="animation-delay:${n*12}ms" title="${esc(displayName(m))} · ${esc(where(k,gi))}">
     ${m.shiny?'<span class="sp">✦</span>':''}<span class="lv">Lv${lvlFromExp(m.experience)}</span>
-    <img class="spr" alt="${esc(pretty(m.species))}" src="${spriteUrl(m)}" draggable="false" onload="spriteLoaded(this)" onerror="this.style.opacity=.2">
+    <img class="spr" alt="${esc(pretty(m.species))}" src="${spriteUrl(m)}" draggable="false" loading="lazy" decoding="async" onload="spriteLoaded(this)" onerror="this.style.opacity=.2">
     <div class="nm">${esc(displayName(m))}</div></div>`;
 }
 function renderPane(k){
