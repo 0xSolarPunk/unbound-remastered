@@ -61,7 +61,7 @@ npm install
 npm start            # → http://localhost:8777
 ```
 
-Options (environment variables): `PORT` (default `8777`), `HOST` (default `0.0.0.0`), `TRADE_TIMEOUT_MS` (default `120000`).
+Options (environment variables): `PORT` (default `8777`), `HOST` (default `0.0.0.0`), `TRADE_TIMEOUT_MS` (default `600000`), `SECURE_COOKIES=1` (require HTTPS for session cookies; leave unset for local HTTP development).
 
 ### Keep it running with tmux + Tailscale
 
@@ -70,9 +70,19 @@ Options (environment variables): `PORT` (default `8777`), `HOST` (default `0.0.0
 tmux respawn-window -k -t ubr:web   # restart the server after pulling changes
 ```
 
+The launcher binds the app to `127.0.0.1` and sets `SECURE_COOKIES=1` for HTTPS through Tailscale Serve. Sign in through the HTTPS tailnet URL; direct HTTP access will not retain a secure session. If upgrading an existing tmux session, recreate its web window once to apply the new settings:
+
+```bash
+tmux respawn-window -k -t ubr:web 'while true; do HOST=127.0.0.1 SECURE_COOKIES=1 node server.js; sleep 2; done'
+```
+
+For a custom port, add `PORT=<port>` before `node server.js` in that command.
+
 ### Access it from your phone with Tailscale
 
 ```bash
+# Start the app with these settings, then run Serve in another terminal:
+HOST=127.0.0.1 SECURE_COOKIES=1 npm start
 tailscale serve --bg 8777
 # → https://<machine>.<tailnet>.ts.net, private to your tailnet
 ```
@@ -95,9 +105,13 @@ Unbound Cloud's web app is a React SPA backed by a small JSON + Socket.IO API. T
 
 ## Privacy & security
 
-- Your password is sent only to `unboundcloud.net` to sign in. It is **never stored**. The server keeps the account token Unbound returns, in `data/sessions.json` (30-day, HttpOnly cookie).
-- Cached Cloud data and sessions live in `data/`, which is git-ignored.
-- Host it for yourself (or friends you trust): whoever runs the server can see the account tokens of people who sign in.
+- Your browser sends your password to this server, which forwards it to `unboundcloud.net` over HTTPS to sign in. The app does **not store passwords**. Use HTTPS when accessing it remotely.
+- Account tokens and browser sessions are held in memory only. Restarting the server signs everyone out. The browser cookie is HttpOnly and SameSite=Lax, expires after 30 days, and is also Secure when `SECURE_COOKIES=1`. Expired sessions are removed on access or by a sweep every minute, along with their working state and any cancellable Wonder Trades.
+- On startup, the server deletes the legacy `data/sessions.json` file and refuses to start if deletion fails. This does not remove tokens from older backups or copies: treat those files as credentials and remove them from storage you control. If they were exposed, arrange to invalidate the upstream account tokens; deleting a file or signing out here does not revoke them at Unbound Cloud.
+- Cached Cloud data, save backups and sprite caches still live in `data/`, which is git-ignored. They may contain personal data even though new sessions are not written there.
+- Host it for yourself (or friends you trust): whoever runs the server can access passwords while processing login and account tokens in memory. In-memory storage does not protect against a compromised host.
+
+Run the isolated session and login regression tests with `npm test`. They use a fake local upstream and do not access real accounts.
 
 ## Disclaimer
 
