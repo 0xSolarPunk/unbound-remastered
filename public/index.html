@@ -237,6 +237,22 @@
     background:#23314a;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:800;z-index:60;transition:.22s;max-width:90vw;box-shadow:var(--shadow)}
   #toast.show{opacity:1;transform:translate(-50%,0)}
 
+  /* ---------- in-page Wonder Trade confirm ---------- */
+  /* Native window.confirm() is suppressed in some embedded browsers and in
+     automated browsers, so clicking Wonder Trade could silently do nothing
+     with no dialog, no error and no trade. This in-page dialog is a real
+     DOM element, so it always renders and can always be clicked. */
+  #wtModal{position:fixed;inset:0;background:#0f152266;display:none;align-items:center;justify-content:center;padding:20px;z-index:80}
+  #wtModal.open{display:flex}
+  #wtModal .card{width:100%;max-width:360px;background:var(--card);border-radius:24px;box-shadow:var(--shadow);padding:24px;text-align:center}
+  #wtModal .card h3{margin:0 0 8px;font-size:18px;font-weight:900}
+  #wtModal .card p{margin:0 0 18px;font-size:13.5px;color:var(--dim)}
+  #wtModal .card p b{color:var(--bad)}
+  #wtModal .row{display:flex;gap:10px}
+  #wtModal .row button{flex:1;padding:12px;border:none;border-radius:999px;font-weight:900;font-size:14px}
+  #wtModal .confirm{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#3a2800}
+  #wtModal .cancel{background:var(--card2);color:var(--ink)}
+
   /* ---------- phones ---------- */
   @media (max-width:680px){
     header{margin:8px 8px 0;padding:8px;border-radius:20px;gap:7px}
@@ -353,6 +369,16 @@
   <div id="dbody"></div>
 </aside>
 <div id="toast"></div>
+<div id="wtModal" role="dialog" aria-modal="true" aria-labelledby="wtModalTitle">
+  <div class="card">
+    <h3 id="wtModalTitle">Wonder Trade?</h3>
+    <p id="wtModalText"></p>
+    <div class="row">
+      <button class="cancel" id="wtCancel">Cancel</button>
+      <button class="confirm" id="wtConfirm">Trade it</button>
+    </div>
+  </div>
+</div>
 <a id="dl" href="/api/savedownload" download hidden></a>
 
 <script type="module">
@@ -785,11 +811,28 @@ function openDrawer(k,gi){
 function closeDrawer(){ $("drawer").classList.remove("open"); $("backdrop").classList.remove("open"); DRAWER=null; }
 
 /* ---------- Wonder Trade ---------- */
+// In-page confirm dialog for Wonder Trade. Returns true only when the user
+// clicks "Trade it" in the DOM dialog. Unlike window.confirm(), this cannot
+// be silently swallowed by an embedded or automated browser, which was the
+// reported failure: an enabled Wonder Trade button that did nothing, with
+// no dialog, no error and no trade.
+function confirmWonderTrade(m){
+  return new Promise(resolve=>{
+    const modal=$("wtModal");
+    $("wtModalText").innerHTML=`Wonder Trade <b>${esc(displayName(m))} (${esc(pretty(m.species))})</b>?<br><br>You'll <b>permanently</b> send it to a random trainer.`;
+    modal.classList.add("open");
+    const done=v=>{ modal.classList.remove("open"); $("wtConfirm").onclick=null; $("wtCancel").onclick=null; modal.onclick=null; resolve(v); };
+    $("wtConfirm").onclick=()=>done(true);
+    $("wtCancel").onclick=()=>done(false);
+    modal.onclick=e=>{ if(e.target===modal) done(false); };
+  });
+}
 async function startWonderTrade(k,gi){
-  const m=STORES[k].boxes[gi];
-  if(!confirm(`Wonder Trade ${displayName(m)} (${pretty(m.species)})?\n\nYou'll permanently send it to a random trainer.`)) return;
-  if("Notification" in window&&Notification.permission==="default") Notification.requestPermission();
   try{
+    const m=STORES[k].boxes[gi];
+    if(!m||!isFilled(m)) return toast("⚠️ That slot is empty.",5000);
+    if(!await confirmWonderTrade(m)) return;
+    if("Notification" in window&&Notification.permission==="default") Notification.requestPermission();
     const j=await post("/api/wondertrade",{source:k,index:gi});
     TRADE={id:j.id,source:k,index:gi,mon:m,started:Date.now()};
     closeDrawer(); render(); toast(`🎲 ${esc(displayName(m))} is off to find a partner!`);
