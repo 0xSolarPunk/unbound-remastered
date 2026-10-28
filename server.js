@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join, extname } from "node:path";
 import { io } from "socket.io-client";
 import sharp from "sharp";
+import { gzipSync } from "node:zlib";
 import { removeLegacySessions, SessionStore } from "./sessions.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -53,9 +54,19 @@ const MIME = {
   ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
   ".png": "image/png", ".svg": "image/svg+xml", ".webp": "image/webp", ".ico": "image/x-icon",
 };
-function send(res, status, body, type = "application/json; charset=utf-8", headers = {}) {
-  res.writeHead(status, { "content-type": type, ...headers });
-  res.end(typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body));
+function send(res, status, body, type = "application/json; charset=utf-8", headers = {}, req) {
+  let data = typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body);
+  const outHeaders = { "content-type": type, ...headers };
+  // Gzip large text/JSON responses (e.g. the 1.3 MB /api/data payload) when the
+  // client accepts it. Binary bodies (sprites, cries, downloads) are left alone.
+  const gzippable = !Buffer.isBuffer(data) || /^(text\/|application\/json|image\/svg\+xml)/.test(type);
+  if (req && gzippable && data.length > 1024 && /\bgzip\b/.test(req.headers["accept-encoding"] || "")) {
+    data = gzipSync(data);
+    outHeaders["content-encoding"] = "gzip";
+    outHeaders["vary"] = "Accept-Encoding";
+  }
+  res.writeHead(status, outHeaders);
+  res.end(data);
 }
 async function readBody(req) {
   const chunks = [];
@@ -275,7 +286,7 @@ const server = http.createServer(async (req, res) => {
     if (!p.startsWith("/api/")) {
       const full = join(PUBLIC_DIR, p === "/" ? "index.html" : p);
       if (!full.startsWith(PUBLIC_DIR)) return send(res, 403, "forbidden", "text/plain");
-      try { return send(res, 200, await readFile(full), MIME[extname(full)] || "application/octet-stream"); }
+      try { return send(res, 200, await readFile(full), MIME[extname(full)] || "application/octet-stream", {}, req); }
       catch { return send(res, 404, "not found", "text/plain"); }
     }
 
@@ -301,7 +312,16 @@ const server = http.createServer(async (req, res) => {
         await writeFile(cacheFile(s.username), JSON.stringify(d));
       }
       S.cloud = { boxes: d.cloudBoxes, titles: d.cloudTitles, live: url.searchParams.get("live") === "1" };
-      return send(res, 200, { cloudBoxes: d.cloudBoxes, cloudTitles: d.cloudTitles });
+      // Background sprite warm-up: pre-fetch/resize the distinct sprites in this
+      // Cloud (6 at a time, reusing the existing dedup/cache) so switching boxes
+      // later is instant, without blocking this response.
+      const combos = new Map();
+      for (const m of d.cloudBoxes) if (isFilled(m)) combos.set(`${m.species}|${!!m.shiny}`, [m.species, !!m.shiny]);
+      (async () => {
+        const list = [...combos.values()];
+        for (let i = 0; i < list.length; i += 6) await Promise.allSettled(list.slice(i, i + 6).map(([sp, sh]) => sprite(sp, sh)));
+      })().catch(() => {});
+      return send(res, 200, { cloudBoxes: d.cloudBoxes, cloudTitles: d.cloudTitles }, undefined, {}, req);
     }
 
     // Upload a .sav — parsed by Unbound's own save reader. Also returns the live Cloud.
