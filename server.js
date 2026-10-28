@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join, extname } from "node:path";
 import { io } from "socket.io-client";
 import sharp from "sharp";
+import { removeLegacySessions, SessionStore } from "./sessions.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8777);
@@ -21,21 +22,27 @@ const DATA_DIR = join(__dirname, "data");
 const SPRITE_DIR = join(DATA_DIR, "sprites");
 const PUBLIC_DIR = join(__dirname, "public");
 await mkdir(SPRITE_DIR, { recursive: true });
+await removeLegacySessions(DATA_DIR);
 
 // ---------- sessions (token -> { username, accountCode, expires }) ----------
 // Security fix: account tokens are held in memory only and are NEVER written to
-// disk. A leaked or copied data directory therefore contains no usable tokens,
-// and a server restart logs everyone out (they simply sign in again).
-const sessions = {};
+// disk. A server restart logs everyone out (they simply sign in again).
 // Per-session working state (memory only): the Cloud/save snapshot the browser is editing,
 // and any running Wonder Trades. token -> { cloud, save, trades }
 const state = new Map();
+const sessions = new SessionStore((token) => {
+  const working = state.get(token);
+  for (const job of working?.trades.values() || []) job.cancel?.();
+  state.delete(token);
+});
+// Also drop inactive sessions: expiration must not depend on another request.
+setInterval(() => sessions.sweep(), 60_000).unref();
 const st = (token) => { if (!state.has(token)) state.set(token, { cloud: null, save: null, trades: new Map() }); return state.get(token); };
 
 function getSession(req) {
   const m = /(?:^|;\s*)ubr_sid=([a-f0-9]{48})/.exec(req.headers.cookie || "");
-  const s = m && sessions[m[1]];
-  if (!s || s.expires < Date.now()) return null;
+  const s = m && sessions.get(m[1]);
+  if (!s) return null;
   return { token: m[1], ...s };
 }
 const cacheFile = (username) => join(DATA_DIR, `cache-${username.replace(/[^\w.-]/g, "_")}.json`);
@@ -239,7 +246,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (up.json.activated === false) return send(res, 403, { error: "This account isn't activated yet — activate it on unboundcloud.net first." });
       const token = randomBytes(24).toString("hex");
-      sessions[token] = { username: up.json.username, accountCode: up.json.accountCode, expires: Date.now() + SESSION_DAYS * 864e5 };
+      sessions.set(token, { username: up.json.username, accountCode: up.json.accountCode, expires: Date.now() + SESSION_DAYS * 864e5 });
       // Secure is set only for the public https deployment (SECURE_COOKIES=1);
       // a Secure cookie would never be sent back over plain local http.
       const secureFlag = process.env.SECURE_COOKIES === "1" ? "; Secure" : "";
@@ -278,9 +285,8 @@ const server = http.createServer(async (req, res) => {
     const S = st(s.token);
 
     if (p === "/api/logout" && req.method === "POST") {
-      for (const j of S.trades.values()) j.cancel?.();
-      delete sessions[s.token]; state.delete(s.token);
-      return send(res, 200, { ok: true }, undefined, { "set-cookie": "ubr_sid=; Path=/; Max-Age=0" });
+      sessions.delete(s.token);
+      return send(res, 200, { ok: true }, undefined, { "set-cookie": `ubr_sid=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${process.env.SECURE_COOKIES === "1" ? "; Secure" : ""}` });
     }
 
     // Cloud data. Default = instant cached copy; ?live=1 = authoritative pull from Unbound.
